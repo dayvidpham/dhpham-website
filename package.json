@@ -10,11 +10,10 @@
   },
   "engines": {
     "node": ">=18.x",
-    "npm": ">=10.x",
-    "pnpm": ">=8.x"
+    "npm": ">=10.x"
   },
   "keywords": [],
-  "author": "",
+  "author": "dayvidpham@gmail.com",
   "license": "ISC",
   "devDependencies": {
     "typescript": "^5.3.3",
