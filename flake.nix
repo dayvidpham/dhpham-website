@@ -9,23 +9,10 @@
     let
         pkgs = nixpkgs.legacyPackages.${system};
         nodePkgs = pkgs.nodejs_20.pkgs;
-        #node2nix = pkgs.writeShellScriptBin "node2nix" ''
-        #  ${nodePkgs.node2nix}/bin/node2nix \
-        #    --development \
-        #    --lock        ./package-lock.json \
-        #    --composition ./nix/default.nix \
-        #    --output      ./nix/node-packages.nix \
-        #    --node-env    ./nix/node-env.nix \
-        #'';
-
-        #generated = pkgs.callPackage ./nix { 
-        #  pkgs = pkgs; system = system; nodejs = pkgs.nodejs_18;
-        #};
 
         buildInputs = [
           pkgs.nodejs_20
         ];
-
 
         # Read the package-lock.json as a Nix attrset
         packageLock = builtins.fromJSON (builtins.readFile (./. + "/package-lock.json"));
@@ -45,8 +32,6 @@
         }; 
 
     in {
-        # inherit (generated) nodeDependencies;
-
         devShells.default = pkgs.mkShell {
             inherit buildInputs;
             shellHook = ''
@@ -79,17 +64,6 @@
             installPhase = ''
               ln -s $out/js/node_modules/.bin $out/bin
             ''; 
-
-            # buildInputs = [ pkgs.nodejs_18 ];
-            # buildPhase = ''
-            #   ln -s ${generated.nodeDependencies}/lib/node_modules ./node_modules
-            #   export PATH="${generated.nodeDependencies}/bin:$PATH"
-            #   npm run build
-            # '';
-            # installPhase = ''
-            #   cp -r dist $out/
-            # '';
-
         };
     });
 }
