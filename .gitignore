@@ -1,5 +1,17 @@
 # Node.js
 **/node_modules/
 
+# TypeScript
+**/*.d.ts
+**/*.d.ts.map
+**/*.js
+**/*.js.map
+**/tsconfig.tsbuildinfo
+
+# Build artifacts
+dist/
+# nix build
+result
+
 # Ignore direnv output
 .direnv/
