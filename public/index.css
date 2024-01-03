@@ -4,6 +4,7 @@
     font-weight: 100 900;
     font-style: normal;
 }
+
 .font-modern {
     font-family: "MuseoModerno", sans-serif;
 }
@@ -14,5 +15,6 @@
 
 #main-canvas {
     position: fixed;
+    top: 0px; left: 0px;
 }
 
