@@ -9,10 +9,6 @@
     font-family: "MuseoModerno", sans-serif;
 }
 
-* {
-    outline: 1px solid red;
-}
-
 #main-canvas {
     position: fixed;
     top: 0px; left: 0px;
@@ -23,4 +19,9 @@
 body {
     background-color: #131313;
     color: #eee;
+    font-family: monospace;
+}
+
+* {
+    outline: 1px solid red;
 }
