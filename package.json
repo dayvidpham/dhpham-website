@@ -6,7 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "vite"
+    "start": "tsc --watch& vite"
   },
   "engines": {
     "node": ">=18.x",
