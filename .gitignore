@@ -10,6 +10,7 @@
 
 # Build artifacts
 dist/
+out/
 # nix build
 result
 
