@@ -16,3 +16,6 @@ result
 
 # Ignore direnv output
 .direnv/
+
+# vim
+**/*.swp
