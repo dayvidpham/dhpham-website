@@ -13,10 +13,10 @@ function getRandomBetween(x0: number, x1: number) {
 }
 
 interface Drawable {
-  frameId: number;
+    frameId: number;
 
-  updateAndDraw(timeMs: number): void;
-  shutdown(): void;
+    updateAndDraw(timeMs: number): void;
+    shutdown(): void;
 }
 
 type Point2D = {
