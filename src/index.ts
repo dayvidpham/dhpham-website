@@ -98,7 +98,6 @@ class Wave implements Drawable {
 
             /////////////////////
             // STROKE
-            // this.ctx.beginPath();
             this.ctx.strokeStyle = strokeRgbHex;
             this.ctx.lineWidth = lineWidth;
             this.ctx.lineTo(x, y);
@@ -190,7 +189,7 @@ class CanvasController {
     readonly fps:   number;
     readonly fpMs:  number;
     drawables:      Drawable[];
-    loopId:         number | null;
+    loopId:         number;
     //isLooping:      boolean;
 
     constructor(
@@ -203,7 +202,7 @@ class CanvasController {
         this.fps        = fps;
         this.drawables  = drawables;
         // Implicit
-        this.loopId     = null;
+        this.loopId     = 0;
         this.fpMs       = 1/fps*1000;
         //this.isLooping  = false;
         // Bindings
@@ -212,7 +211,7 @@ class CanvasController {
     }
 
     init() {
-        if (this.loopId != null) {
+        if (this.loopId != 0) {
             console.error('Called loop() in CanvasController instance when already looping. Returning.');
             return
         }
@@ -228,12 +227,12 @@ class CanvasController {
 
     shutdown() {
         //if (this.isLooping == false) {
-        if (this.loopId == null) {
+        if (this.loopId == 0) {
             console.error('Called shutdown() in CanvasController instance when not yet looping. Returning.');
             return
         }
         clearInterval(this.loopId);
-        this.loopId = null;
+        this.loopId = 0;
 
         for(let i = 0; i < this.drawables.length; i++) {
             this.drawables[i].shutdown();
@@ -285,48 +284,6 @@ for(let i = 0; i < NUM_WAVES; i++) {
         xlinspace:  115,
     }));
 }
-
-function animateFromContext(ctx: CanvasRenderingContext2D) {
-    let previousTimestamp = 0;
-    let radius = 200;
-    let x = ctx.canvas.width / 3,
-        y = 0,
-        yy = 0;
-
-    const xSpeed    = 500 / 1000;           // px/ms
-    const yDispl    = 200;                  // px/ms
-    const yPeriod   = 2*Math.PI / 2000;     // radians/ms, one full period per 2 secs
-
-    const render = function periodic(timestamp: number) {
-        if(previousTimestamp === 0) {
-            previousTimestamp = timestamp;
-        }
-
-        const update = timestamp - previousTimestamp;
-
-        // x += update*xSpeed;
-        // if(x > ctx.canvas.width + radius) {
-        //     x = -radius
-        // }
-
-        // yy += update*yPeriod;
-        // y = yDispl*Math.sin(yy);
-
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-        ctx.fillStyle = '#da5225';
-        ctx.beginPath();
-        ctx.arc(x, y+ctx.canvas.height/2, 200, 0, 2*Math.PI);
-        ctx.closePath();
-        ctx.fill();
-
-        previousTimestamp = timestamp;
-        // window.requestAnimationFrame(render);
-    }
-    return render;
-};
-
-//window.requestAnimationFrame(animateFromContext(ctx));
 
 const fps = 60;
 const controller = new CanvasController(ctx, fps, drawables);
