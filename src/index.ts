@@ -53,7 +53,7 @@ class Wave implements Drawable {
         this.start      = props.start;
         this.end        = props.end;
         this.yPeriod    = props.yPeriod;
-        this.ySin       = 0;
+        this.ySin       = props.ySin;
         this.xlinspace  = props.xlinspace;
         // Implicit
         this.nPoints    = Math.floor((this.end.x - this.start.x) / this.xlinspace);
@@ -93,7 +93,7 @@ class Wave implements Drawable {
         for(let t = 0; t <= 1; t += this.tStep) {
             x = lerp(this.start.x, this.end.x, t) + getRandomBetween(-xJitter, xJitter);
             y = lerp(this.start.y, this.end.y, t) 
-                + Math.sin(t*4*Math.PI + ySin)*yMagnitude 
+                + Math.sin((t)*2*Math.PI + ySin)*yMagnitude 
                 + getRandomBetween(-yJitter, yJitter);
 
             /////////////////////
@@ -106,7 +106,7 @@ class Wave implements Drawable {
             /////////////////////
             // FILL
             // this.ctx.fillStyle = "#fff";
-            this.ctx.arc(x, y, 10, 0, 2*Math.PI);
+            // this.ctx.arc(x, y, 10, 0, 2*Math.PI);
             // this.ctx.fill();
         }
         this.ctx.stroke();
@@ -272,14 +272,28 @@ const sun = new Sun({
 });
 
 const wave = new Wave({
-    ctx: ctx,
+    ctx:        ctx,
     start:      { x: 0, y: ctx.canvas.height / 2 },
     end:        { x: ctx.canvas.width, y: ctx.canvas.height / 2 },
     yPeriod:    2*Math.PI / 2000,
     ySin:       0,
     xlinspace:  115,
 });
-const waves: Drawable[] = [];
+
+const NUM_WAVES = 5;
+const yOffset = ctx.canvas.height / (2*8);
+const ySinOffset = Math.PI / NUM_WAVES
+const drawables: Drawable[] = [sun];
+for(let i = 0; i < NUM_WAVES; i++) {
+    drawables.push(new Wave({
+        ctx:        ctx,
+        start:      { x: 0, y: ctx.canvas.height/2 - yOffset*i },
+        end:        { x: ctx.canvas.width, y: ctx.canvas.height/2 + yOffset*i },
+        yPeriod:    2*Math.PI / 2000,
+        ySin:       ySinOffset*i,
+        xlinspace:  115,
+    }));
+}
 
 function animateFromContext(ctx: CanvasRenderingContext2D) {
     let previousTimestamp = 0;
@@ -323,8 +337,8 @@ function animateFromContext(ctx: CanvasRenderingContext2D) {
 
 //window.requestAnimationFrame(animateFromContext(ctx));
 
-const fps = 17;
-const controller = new CanvasController(ctx, fps, [sun, wave]);
+const fps = 60;
+const controller = new CanvasController(ctx, fps, drawables);
 controller.init();
 //setTimeout(controller.shutdown, 5*1000);
 //controller.shutdown();
