@@ -144,6 +144,7 @@ class CanvasController {
         for(let i = 0; i < this.drawables.length; i++) {
             window.requestAnimationFrame(this.drawables[i].updateAndDraw);
         }
+        this.isLooping = true;
     }
 
     shutdown() {
@@ -154,6 +155,7 @@ class CanvasController {
         for(let i = 0; i < this.drawables.length; i++) {
             this.drawables[i].shutdown();
         }
+        this.isLooping = false;
     }
 }
 
@@ -232,4 +234,5 @@ window.requestAnimationFrame(animateFromContext(ctx));
 const fps = 60;
 const controller = new CanvasController(ctx, fps, [wave]);
 controller.init();
+setTimeout(controller.shutdown, 5*1000);
 //controller.shutdown();
