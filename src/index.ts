@@ -73,7 +73,7 @@ class Wave implements Drawable {
 
         this.draw(this.ySin, yMagnitude, xJitter, yJitter, strokeRgbHex, lineWidth);
         this.prevTimeMs = timeMs;
-        this.frameId = window.requestAnimationFrame(this.updateAndDraw);
+        // this.frameId = window.requestAnimationFrame(this.updateAndDraw);
     }
 
     draw(
@@ -119,43 +119,52 @@ class CanvasController {
     readonly ctx:   CanvasRenderingContext2D;
     readonly fps:   number;
     drawables:      Drawable[];
-    //loopId:         number | null;
-    isLooping:      boolean;
+    loopId:         number | null;
+    //isLooping:      boolean;
 
     constructor(
       ctx:        CanvasRenderingContext2D,
       fps:        number,
       drawables:  Drawable[],
     ) {
+        // Explicit
         this.ctx        = ctx;
         this.fps        = fps;
         this.drawables  = drawables;
-        this.isLooping  = false;
-
+        // Implicit
+        this.loopId     = null;
+        //this.isLooping  = false;
+        // Bindings
         this.init = this.init.bind(this);
         this.shutdown = this.shutdown.bind(this);
     }
 
     init() {
-        if (this.isLooping) {
+        if (this.loopId != null) {
             console.error('Called loop() in CanvasController instance when already looping. Returning.');
             return
         }
-        for(let i = 0; i < this.drawables.length; i++) {
-            window.requestAnimationFrame(this.drawables[i].updateAndDraw);
-        }
-        this.isLooping = true;
+        const loop = () => {
+          for(let i = 0; i < this.drawables.length; i++) {
+              window.requestAnimationFrame(this.drawables[i].updateAndDraw);
+          }
+        };
+        this.loopId = setInterval(loop, this.fps);
+        //this.isLooping = true;
     }
 
     shutdown() {
-        if (this.isLooping == false) {
+        //if (this.isLooping == false) {
+        if (this.loopId == null) {
             console.error('Called shutdown() in CanvasController instance when not yet looping. Returning.');
             return
         }
-        for(let i = 0; i < this.drawables.length; i++) {
-            this.drawables[i].shutdown();
-        }
-        this.isLooping = false;
+        //for(let i = 0; i < this.drawables.length; i++) {
+        //    this.drawables[i].shutdown();
+        //}
+        clearInterval(this.loopId);
+        this.loopId = null;
+        //this.isLooping = false;
     }
 }
 
@@ -229,10 +238,10 @@ function animateFromContext(ctx: CanvasRenderingContext2D) {
     return render;
 };
 
-window.requestAnimationFrame(animateFromContext(ctx));
+// window.requestAnimationFrame(animateFromContext(ctx));
 
 const fps = 60;
 const controller = new CanvasController(ctx, fps, [wave]);
 controller.init();
-setTimeout(controller.shutdown, 5*1000);
+//setTimeout(controller.shutdown, 5*1000);
 //controller.shutdown();
