@@ -271,16 +271,7 @@ const sun = new Sun({
     fillRgbHex: '#b8360f',
 });
 
-const wave = new Wave({
-    ctx:        ctx,
-    start:      { x: 0, y: ctx.canvas.height / 2 },
-    end:        { x: ctx.canvas.width, y: ctx.canvas.height / 2 },
-    yPeriod:    2*Math.PI / 2000,
-    ySin:       0,
-    xlinspace:  115,
-});
-
-const NUM_WAVES = 5;
+const NUM_WAVES = 10;
 const yOffset = ctx.canvas.height / (2*8);
 const ySinOffset = Math.PI / NUM_WAVES
 const drawables: Drawable[] = [sun];
