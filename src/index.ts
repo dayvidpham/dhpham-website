@@ -5,39 +5,47 @@
 function lerp(x0: number, x1: number, t: number) {
     return x0+(x1-x0)*t
 }
+
 function getRandomBetween(x0: number, x1: number) {
     const low = Math.min(x0, x1);
     const high = Math.max(x0, x1);
     return Math.random()*(high-low) + low;
 }
+
 interface Drawable {
+  frameId: number;
+
   updateAndDraw(timeMs: number): void;
   shutdown(): void;
 }
+
 type Point2D = {
-    x: number;
-    y: number;
+    readonly x: number;
+    readonly y: number;
 }
+
 type WaveProps = {
-    ctx:        CanvasRenderingContext2D;
-    start:      Point2D;
-    end:        Point2D;
-    yPeriod:    number;
-    xlinspace:  number;
+    readonly ctx:        CanvasRenderingContext2D;
+    readonly start:      Point2D;
+    readonly end:        Point2D;
+    readonly yPeriod:    number;
+    readonly ySin:       number;
+    readonly xlinspace:  number;
 }
+
 class Wave implements Drawable {
     // Explicit
     readonly ctx:       CanvasRenderingContext2D;
     readonly start:     Point2D;
     readonly end:       Point2D;
     readonly yPeriod:   number;
+    ySin:               number;
     readonly xlinspace: number;
     // Implicit or set later
     readonly nPoints:   number;
     readonly tStep:     number;
-    ySin:               number;
     prevTimeMs:         number;
-    frameId:            number | null;
+    frameId:            number;
 
     constructor(props: WaveProps) {
         // Explicit
@@ -45,16 +53,16 @@ class Wave implements Drawable {
         this.start      = props.start;
         this.end        = props.end;
         this.yPeriod    = props.yPeriod;
+        this.ySin       = 0;
         this.xlinspace  = props.xlinspace;
         // Implicit
-        this.ySin       = 0;
         this.nPoints    = Math.floor((this.end.x - this.start.x) / this.xlinspace);
         this.tStep      = 1 / this.nPoints;
         this.prevTimeMs = -1;
-        this.frameId    = null;
+        this.frameId    = 0;
         // `this` will be undefined when re-called
-        this.draw           = this.draw.bind(this);
         this.updateAndDraw  = this.updateAndDraw.bind(this);
+        this.draw           = this.draw.bind(this);
         this.shutdown       = this.shutdown.bind(this);
     }
 
@@ -64,7 +72,7 @@ class Wave implements Drawable {
         }
 
         const elapsed =  timeMs - this.prevTimeMs;
-        this.ySin += elapsed * this.yPeriod;
+        this.ySin += elapsed*this.yPeriod;
         const yMagnitude    = 100,
               strokeRgbHex  = '#ccc',
               xJitter       = 2,
@@ -73,7 +81,6 @@ class Wave implements Drawable {
 
         this.draw(this.ySin, yMagnitude, xJitter, yJitter, strokeRgbHex, lineWidth);
         this.prevTimeMs = timeMs;
-        // this.frameId = window.requestAnimationFrame(this.updateAndDraw);
     }
 
     draw(
@@ -99,25 +106,89 @@ class Wave implements Drawable {
             /////////////////////
             // FILL
             // this.ctx.fillStyle = "#fff";
-            // this.ctx.arc(x, y, 10, 0, 2*Math.PI);
+            this.ctx.arc(x, y, 10, 0, 2*Math.PI);
             // this.ctx.fill();
         }
         this.ctx.stroke();
     }
 
     shutdown() {
-        if(this.frameId == null) {
+        if(this.frameId === 0) {
             console.error('Calling shutdown() on Wave object but Wave object not in updateAndDraw loop');
             return
         }
         window.cancelAnimationFrame(this.frameId);
-        this.frameId = null;
+        this.frameId = 0;
+    }
+}
+
+type SunProps = {
+    ctx:         CanvasRenderingContext2D;
+    origin:      Point2D;
+    radius:      number;
+    fillRgbHex:  string;
+}
+
+class Sun implements Drawable {
+    // Explicit
+    readonly ctx:         CanvasRenderingContext2D;
+    readonly origin:      Point2D;
+    readonly radius:      number;
+    readonly fillRgbHex:  string;
+    // Implicit or set later
+    prevTimeMs:         number;
+    frameId:            number;
+
+    constructor(props: SunProps) {
+        // Explicit
+        this.ctx        = props.ctx;
+        this.origin     = props.origin;
+        this.radius     = props.radius;
+        this.fillRgbHex = props.fillRgbHex;
+        // Implicit
+        this.prevTimeMs = -1;
+        this.frameId    = 0;
+        // `this` will be undefined when re-called
+        this.draw           = this.draw.bind(this);
+        this.updateAndDraw  = this.updateAndDraw.bind(this);
+        this.shutdown       = this.shutdown.bind(this);
+    }
+
+    updateAndDraw(timeMs: number) {
+        if (this.prevTimeMs === -1) {
+            this.prevTimeMs = timeMs;
+        }
+
+        const elapsed =  timeMs - this.prevTimeMs;
+
+        this.draw(this.fillRgbHex);
+        this.prevTimeMs = timeMs;
+    }
+
+    draw(
+      fillRgbHex: string
+    ) {
+        this.ctx.beginPath();
+        // FILL
+        this.ctx.fillStyle = fillRgbHex;
+        this.ctx.arc(this.origin.x, this.origin.y, this.radius, 0, 2*Math.PI);
+        this.ctx.fill();
+    }
+
+    shutdown() {
+        if(this.frameId === 0) {
+            console.error('Calling shutdown() on Wave object but Wave object not in updateAndDraw loop');
+            return
+        }
+        window.cancelAnimationFrame(this.frameId);
+        this.frameId = 0;
     }
 }
 
 class CanvasController {
     readonly ctx:   CanvasRenderingContext2D;
     readonly fps:   number;
+    readonly fpMs:  number;
     drawables:      Drawable[];
     loopId:         number | null;
     //isLooping:      boolean;
@@ -133,6 +204,7 @@ class CanvasController {
         this.drawables  = drawables;
         // Implicit
         this.loopId     = null;
+        this.fpMs       = 1/fps*1000;
         //this.isLooping  = false;
         // Bindings
         this.init = this.init.bind(this);
@@ -145,11 +217,12 @@ class CanvasController {
             return
         }
         const loop = () => {
-          for(let i = 0; i < this.drawables.length; i++) {
-              window.requestAnimationFrame(this.drawables[i].updateAndDraw);
-          }
+            this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+            for(let i = 0; i < this.drawables.length; i++) {
+                this.drawables[i].frameId = window.requestAnimationFrame(this.drawables[i].updateAndDraw);
+            }
         };
-        this.loopId = setInterval(loop, this.fps);
+        this.loopId = setInterval(loop, this.fpMs);
         //this.isLooping = true;
     }
 
@@ -159,11 +232,12 @@ class CanvasController {
             console.error('Called shutdown() in CanvasController instance when not yet looping. Returning.');
             return
         }
-        //for(let i = 0; i < this.drawables.length; i++) {
-        //    this.drawables[i].shutdown();
-        //}
         clearInterval(this.loopId);
         this.loopId = null;
+
+        for(let i = 0; i < this.drawables.length; i++) {
+            this.drawables[i].shutdown();
+        }
         //this.isLooping = false;
     }
 }
@@ -190,18 +264,27 @@ if (ctx == null) {
     throw new ReferenceError('Canvas failed to return 2d context');
 }
 
+const sun = new Sun({
+    ctx:        ctx,
+    origin:     { x: ctx.canvas.width/3, y: ctx.canvas.height/2 },
+    radius:     ctx.canvas.width / 6,
+    fillRgbHex: '#b8360f',
+});
+
 const wave = new Wave({
     ctx: ctx,
     start:      { x: 0, y: ctx.canvas.height / 2 },
     end:        { x: ctx.canvas.width, y: ctx.canvas.height / 2 },
     yPeriod:    2*Math.PI / 2000,
-    xlinspace:  10,
+    ySin:       0,
+    xlinspace:  115,
 });
+const waves: Drawable[] = [];
 
 function animateFromContext(ctx: CanvasRenderingContext2D) {
     let previousTimestamp = 0;
     let radius = 200;
-    let x = 0,
+    let x = ctx.canvas.width / 3,
         y = 0,
         yy = 0;
 
@@ -216,13 +299,13 @@ function animateFromContext(ctx: CanvasRenderingContext2D) {
 
         const update = timestamp - previousTimestamp;
 
-        x += update*xSpeed;
-        if(x > ctx.canvas.width + radius) {
-            x = -radius
-        }
+        // x += update*xSpeed;
+        // if(x > ctx.canvas.width + radius) {
+        //     x = -radius
+        // }
 
-        yy += update*yPeriod;
-        y = yDispl*Math.sin(yy);
+        // yy += update*yPeriod;
+        // y = yDispl*Math.sin(yy);
 
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -233,15 +316,15 @@ function animateFromContext(ctx: CanvasRenderingContext2D) {
         ctx.fill();
 
         previousTimestamp = timestamp;
-        window.requestAnimationFrame(render);
+        // window.requestAnimationFrame(render);
     }
     return render;
 };
 
-// window.requestAnimationFrame(animateFromContext(ctx));
+//window.requestAnimationFrame(animateFromContext(ctx));
 
-const fps = 60;
-const controller = new CanvasController(ctx, fps, [wave]);
+const fps = 17;
+const controller = new CanvasController(ctx, fps, [sun, wave]);
 controller.init();
 //setTimeout(controller.shutdown, 5*1000);
 //controller.shutdown();
