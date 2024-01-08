@@ -76,7 +76,7 @@ class Wave implements Drawable {
         const yMagnitude    = 100,
               strokeRgbHex  = '#ccc',
               xJitter       = 2,
-              yJitter       = 4,
+              yJitter       = 3,
               lineWidth     = 0.75;
 
         this.draw(this.ySin, yMagnitude, xJitter, yJitter, strokeRgbHex, lineWidth);
@@ -93,7 +93,7 @@ class Wave implements Drawable {
         for(let t = 0; t <= 1; t += this.tStep) {
             x = lerp(this.start.x, this.end.x, t) + getRandomBetween(-xJitter, xJitter);
             y = lerp(this.start.y, this.end.y, t) 
-                + Math.sin((t)*2*Math.PI + ySin)*yMagnitude 
+                + Math.sin(t*2*Math.PI + ySin)*yMagnitude 
                 + getRandomBetween(-yJitter, yJitter);
 
             /////////////////////
@@ -289,7 +289,7 @@ for(let i = 0; i < NUM_WAVES; i++) {
         ctx:        ctx,
         start:      { x: 0, y: ctx.canvas.height/2 - yOffset*i },
         end:        { x: ctx.canvas.width, y: ctx.canvas.height/2 + yOffset*i },
-        yPeriod:    2*Math.PI / 2000,
+        yPeriod:    2*Math.PI / 3000,
         ySin:       ySinOffset*i,
         xlinspace:  115,
     }));
