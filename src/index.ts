@@ -30,7 +30,8 @@ type WaveProps = {
     readonly end:        Point2D;
     readonly yPeriod:    number;
     readonly ySin:       number;
-    readonly xlinspace:  number;
+    readonly nPoints:    number;
+    //readonly xlinspace:  number;
 }
 
 class Wave implements Drawable {
@@ -40,9 +41,9 @@ class Wave implements Drawable {
     readonly end:       Point2D;
     readonly yPeriod:   number;
     ySin:               number;
-    readonly xlinspace: number;
-    // Implicit or set later
     readonly nPoints:   number;
+    // Implicit or set later
+    readonly xlinspace: number;
     readonly tStep:     number;
     prevTimeMs:         number;
     frameId:            number;
@@ -54,9 +55,10 @@ class Wave implements Drawable {
         this.end        = props.end;
         this.yPeriod    = props.yPeriod;
         this.ySin       = props.ySin;
-        this.xlinspace  = props.xlinspace;
+        this.nPoints    = props.nPoints;
         // Implicit
-        this.nPoints    = Math.floor((this.end.x - this.start.x) / this.xlinspace);
+        //this.nPoints    = Math.floor((this.end.x - this.start.x) / this.xlinspace);
+        this.xlinspace  = (props.end.y - props.start.y) / props.nPoints;
         this.tStep      = 1 / this.nPoints;
         this.prevTimeMs = -1;
         this.frameId    = 0;
@@ -105,7 +107,7 @@ class Wave implements Drawable {
             /////////////////////
             // FILL
             // this.ctx.fillStyle = "#fff";
-            // this.ctx.arc(x, y, 10, 0, 2*Math.PI);
+            // this.ctx.arc(x, y, 3, 0, 2*Math.PI);
             // this.ctx.fill();
         }
         this.ctx.stroke();
@@ -271,17 +273,17 @@ const sun = new Sun({
 });
 
 const NUM_WAVES = 10;
-const yOffset = ctx.canvas.height / (2*8);
+const yOffset = ctx.canvas.height / (2*NUM_WAVES);
 const ySinOffset = Math.PI / NUM_WAVES
 const drawables: Drawable[] = [sun];
 for(let i = 0; i < NUM_WAVES; i++) {
     drawables.push(new Wave({
         ctx:        ctx,
-        start:      { x: 0, y: ctx.canvas.height/2 - yOffset*i },
+        start:      { x: 0, y: ctx.canvas.height/2 },
         end:        { x: ctx.canvas.width, y: ctx.canvas.height/2 + yOffset*i },
         yPeriod:    2*Math.PI / 3000,
         ySin:       ySinOffset*i,
-        xlinspace:  115,
+        nPoints:    10,
     }));
 }
 
