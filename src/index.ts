@@ -273,11 +273,12 @@ if (ctx == null) {
 const sun = new Sun({
     ctx:        ctx,
     origin:     { x: ctx.canvas.width/3, y: ctx.canvas.height/2 },
-    radius:     ctx.canvas.width / 6,
+    radius:     Math.min(ctx.canvas.width / 7, 150),
     fillRgbHex: '#b8360f',
 });
+console.log(`radius ${Math.min(ctx.canvas.width / 7, 150)}`);
 
-const NUM_WAVES = 10;
+const NUM_WAVES = 35;
 const yOffset = ctx.canvas.height / (2*NUM_WAVES);
 const ySinOffset = Math.PI / NUM_WAVES
 const drawables: Drawable[] = [sun];
@@ -288,7 +289,7 @@ for(let i = 0; i < NUM_WAVES; i++) {
         end:        { x: ctx.canvas.width, y: ctx.canvas.height/2 + yOffset*i },
         yPeriod:    2*Math.PI / 3000,
         ySin:       ySinOffset*i,
-        nPoints:    10,
+        nPoints:    100,
     }));
 }
 
