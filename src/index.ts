@@ -24,6 +24,14 @@ type Point2D = {
     readonly y: number;
 }
 
+
+
+
+
+////////////////////////////////////////////////////
+// Wave
+////////////////////////////////////////////////////
+
 type WaveProps = {
     readonly ctx:        CanvasRenderingContext2D;
     readonly start:      Point2D;
@@ -75,11 +83,11 @@ class Wave implements Drawable {
 
         const elapsed =  timeMs - this.prevTimeMs;
         this.ySin += elapsed*this.yPeriod;
-        const yMagnitude    = 100,
-              strokeRgbHex  = '#ccc',
+        const yMagnitude    = Math.min(this.ctx.canvas.height/12, 42),
+              strokeRgbHex  = '#a0a0cc15',
               xJitter       = 0,
-              yJitter       = 0,
-              lineWidth     = 0.75;
+              yJitter       = 3,
+              lineWidth     = Math.min(Math.max(this.ctx.canvas.width/5, 30), 125);
 
         this.draw(this.ySin, yMagnitude, xJitter, yJitter, strokeRgbHex, lineWidth);
         this.prevTimeMs = timeMs;
@@ -92,18 +100,18 @@ class Wave implements Drawable {
     ) {
         let x, y;
         this.ctx.beginPath();
+        this.ctx.strokeStyle = strokeRgbHex;
+        this.ctx.lineWidth = lineWidth;
         for(let t = 0; t <= 1; t += this.tStep) {
             x = lerp(this.start.x, this.end.x, t) 
-                // + getRandomBetween(-xJitter, xJitter);
+                + getRandomBetween(-xJitter, xJitter);
             y = lerp(this.start.y, this.end.y, t) 
                 + Math.sin(t*2*Math.PI + ySin)*yMagnitude
-                //+ getRandomBetween(-yJitter, yJitter);
+                + getRandomBetween(-yJitter, yJitter);
 
             /////////////////////
             // STROKE
             //this.ctx.strokeStyle = "black";
-            this.ctx.strokeStyle = strokeRgbHex;
-            this.ctx.lineWidth = lineWidth;
             this.ctx.lineTo(x, y);
 
             /////////////////////
@@ -113,9 +121,9 @@ class Wave implements Drawable {
             // this.ctx.fill();
         }
         this.ctx.stroke();
-        //this.ctx.strokeStyle = strokeRgbHex;
-        //this.ctx.lineWidth = lineWidth-2;
-        //this.ctx.stroke();
+        // this.ctx.strokeStyle = strokeRgbHex;
+        // this.ctx.lineWidth = lineWidth-2;
+        // this.ctx.stroke();
     }
 
     shutdown() {
@@ -127,6 +135,14 @@ class Wave implements Drawable {
         this.frameId = 0;
     }
 }
+
+
+
+
+
+////////////////////////////////////////////////////
+// Sun
+////////////////////////////////////////////////////
 
 type SunProps = {
     ctx:         CanvasRenderingContext2D;
@@ -191,6 +207,13 @@ class Sun implements Drawable {
     }
 }
 
+
+
+
+
+////////////////////////////////////////////////////
+// CanvasController
+////////////////////////////////////////////////////
 class CanvasController {
     readonly ctx:   CanvasRenderingContext2D;
     readonly fps:   number;
@@ -229,7 +252,6 @@ class CanvasController {
             }
         };
         this.loopId = setInterval(loop, this.fpMs);
-        //this.isLooping = true;
     }
 
     shutdown() {
@@ -250,12 +272,21 @@ class CanvasController {
 
 function handleResize (canvas: HTMLCanvasElement) {
     return function () {
+        //console.log(`before: (${canvas.width}, ${canvas.height})`);
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        //console.log(`after: (${canvas.width}, ${canvas.height})`);
     };
 };
+////////////////////////////////////////////////////
 
+
+
+
+
+////////////////////////////////////////////////////
 // Init canvas
+////////////////////////////////////////////////////
 const canvasQuery: HTMLCanvasElement | null = document.querySelector("#main-canvas");
 if (canvasQuery == null) {
     throw new ReferenceError('Could not find #main-canvas element: something is horribly wrong. Exiting ...');
@@ -276,25 +307,26 @@ const sun = new Sun({
     radius:     Math.min(ctx.canvas.width / 7, 150),
     fillRgbHex: '#b8360f',
 });
-console.log(`radius ${Math.min(ctx.canvas.width / 7, 150)}`);
+// console.log(`radius ${Math.min(ctx.canvas.width / 7, 150)}`);
 
-const NUM_WAVES = 35;
+const NUM_WAVES = 8;
 const yOffset = ctx.canvas.height / (2*NUM_WAVES);
 const ySinOffset = Math.PI / NUM_WAVES
 const drawables: Drawable[] = [sun];
 for(let i = 0; i < NUM_WAVES; i++) {
     drawables.push(new Wave({
         ctx:        ctx,
-        start:      { x: 0, y: ctx.canvas.height/2 },
-        end:        { x: ctx.canvas.width, y: ctx.canvas.height/2 + yOffset*i },
+        start:      { x: -50, y: ctx.canvas.height/2 + yOffset*i },
+        end:        { x: ctx.canvas.width+50, y: ctx.canvas.height/2 + yOffset*i },
         yPeriod:    2*Math.PI / 3000,
         ySin:       ySinOffset*i,
-        nPoints:    100,
+        nPoints:    64,
     }));
 }
 
-const fps = 60;
+const fps = 30;
 const controller = new CanvasController(ctx, fps, drawables);
 controller.init();
 //setTimeout(controller.shutdown, 5*1000);
 //controller.shutdown();
+
