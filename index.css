@@ -9,6 +9,10 @@
     font-family: "MuseoModerno", sans-serif;
 }
 
+#name {
+    color: #f0f0f0;
+}
+
 #main-canvas {
     position: fixed;
     top: 0px; left: 0px;
@@ -20,6 +24,17 @@ body {
     background-color: #131313;
     color: #eee;
     font-family: monospace;
+    margin: 1.5rem;
+}
+
+a {
+    text-decoration: 1.5px underline #b8360f;
+    color: #eee;
+}
+
+a:visited {
+    text-decoration-color: #591f0d;
+    color: #727272;
 }
 
 /*
@@ -27,3 +42,4 @@ body {
     outline: 1px solid red;
 }
 */
+
