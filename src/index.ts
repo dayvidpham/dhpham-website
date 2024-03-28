@@ -83,11 +83,11 @@ class Wave implements Drawable {
 
         const elapsed =  timeMs - this.prevTimeMs;
         this.ySin += elapsed*this.yPeriod;
-        const yMagnitude    = Math.min(this.ctx.canvas.height/12, 42),
-              strokeRgbHex  = '#a0a0cc15',
+        const yMagnitude    = 200,
+              strokeRgbHex  = '#a0a0cc95',
               xJitter       = 0,
-              yJitter       = 3,
-              lineWidth     = Math.min(Math.max(this.ctx.canvas.width/5, 30), 125);
+              yJitter       = 2,
+              lineWidth     = 0.75;
 
         this.draw(this.ySin, yMagnitude, xJitter, yJitter, strokeRgbHex, lineWidth);
         this.prevTimeMs = timeMs;
@@ -106,7 +106,7 @@ class Wave implements Drawable {
             x = lerp(this.start.x, this.end.x, t) 
                 + getRandomBetween(-xJitter, xJitter);
             y = lerp(this.start.y, this.end.y, t) 
-                + Math.sin(t*2*Math.PI + ySin)*yMagnitude
+                + Math.sin(t*3*Math.PI + ySin)*yMagnitude
                 + getRandomBetween(-yJitter, yJitter);
 
             /////////////////////
@@ -206,6 +206,7 @@ class Sun implements Drawable {
         this.frameId = 0;
     }
 }
+////////////////////////////////////////////////////
 
 
 
@@ -309,22 +310,22 @@ const sun = new Sun({
 });
 // console.log(`radius ${Math.min(ctx.canvas.width / 7, 150)}`);
 
-const NUM_WAVES = 8;
+const NUM_WAVES = 10;
 const yOffset = ctx.canvas.height / (2*NUM_WAVES);
 const ySinOffset = Math.PI / NUM_WAVES
 const drawables: Drawable[] = [sun];
 for(let i = 0; i < NUM_WAVES; i++) {
     drawables.push(new Wave({
         ctx:        ctx,
-        start:      { x: -50, y: ctx.canvas.height/2 + yOffset*i },
-        end:        { x: ctx.canvas.width+50, y: ctx.canvas.height/2 + yOffset*i },
+        start:      { x: -50, y: ctx.canvas.height/2 - yOffset*NUM_WAVES + yOffset*i*2 },
+        end:        { x: ctx.canvas.width+50, y: ctx.canvas.height/2 + yOffset*NUM_WAVES - yOffset*i },
         yPeriod:    2*Math.PI / 3000,
         ySin:       ySinOffset*i,
-        nPoints:    64,
+        nPoints:    100,
     }));
 }
 
-const fps = 30;
+const fps = 60;
 const controller = new CanvasController(ctx, fps, drawables);
 controller.init();
 //setTimeout(controller.shutdown, 5*1000);
