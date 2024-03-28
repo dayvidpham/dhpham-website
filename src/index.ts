@@ -69,7 +69,7 @@ class Wave implements Drawable {
         this.xlinspace  = (props.end.y - props.start.y) / props.nPoints;
         this.tStep      = 1 / this.nPoints;
         this.prevTimeMs = -1;
-        this.frameId    = 0;
+        this.frameId    = -1;
         // `this` will be undefined when re-called
         this.updateAndDraw  = this.updateAndDraw.bind(this);
         this.draw           = this.draw.bind(this);
@@ -127,12 +127,12 @@ class Wave implements Drawable {
     }
 
     shutdown() {
-        if(this.frameId === 0) {
+        if(this.frameId === -1) {
             console.error('Calling shutdown() on Wave object but Wave object not in updateAndDraw loop');
             return
         }
         window.cancelAnimationFrame(this.frameId);
-        this.frameId = 0;
+        this.frameId = -1;
     }
 }
 
@@ -169,7 +169,7 @@ class Sun implements Drawable {
         this.fillRgbHex = props.fillRgbHex;
         // Implicit
         this.prevTimeMs = -1;
-        this.frameId    = 0;
+        this.frameId    = -1;
         // `this` will be undefined when re-called
         this.draw           = this.draw.bind(this);
         this.updateAndDraw  = this.updateAndDraw.bind(this);
@@ -198,12 +198,12 @@ class Sun implements Drawable {
     }
 
     shutdown() {
-        if(this.frameId === 0) {
+        if(this.frameId === -1) {
             console.error('Calling shutdown() on Wave object but Wave object not in updateAndDraw loop');
             return
         }
         window.cancelAnimationFrame(this.frameId);
-        this.frameId = 0;
+        this.frameId = -1;
     }
 }
 ////////////////////////////////////////////////////
@@ -221,7 +221,6 @@ class CanvasController {
     readonly fpMs:  number;
     drawables:      Drawable[];
     loopId:         number;
-    //isLooping:      boolean;
 
     constructor(
       ctx:        CanvasRenderingContext2D,
@@ -233,16 +232,15 @@ class CanvasController {
         this.fps        = fps;
         this.drawables  = drawables;
         // Implicit
-        this.loopId     = 0;
+        this.loopId     = -1;
         this.fpMs       = 1/fps*1000;
-        //this.isLooping  = false;
         // Bindings
         this.init = this.init.bind(this);
         this.shutdown = this.shutdown.bind(this);
     }
 
     init() {
-        if (this.loopId != 0) {
+        if (this.loopId != -1) {
             console.error('Called loop() in CanvasController instance when already looping. Returning.');
             return
         }
@@ -256,18 +254,16 @@ class CanvasController {
     }
 
     shutdown() {
-        //if (this.isLooping == false) {
-        if (this.loopId == 0) {
+        if (this.loopId === -1) {
             console.error('Called shutdown() in CanvasController instance when not yet looping. Returning.');
             return
         }
         clearInterval(this.loopId);
-        this.loopId = 0;
+        this.loopId = -1;
 
         for(let i = 0; i < this.drawables.length; i++) {
             this.drawables[i].shutdown();
         }
-        //this.isLooping = false;
     }
 }
 
@@ -289,7 +285,7 @@ function handleResize (canvas: HTMLCanvasElement) {
 // Init canvas
 ////////////////////////////////////////////////////
 const canvasQuery: HTMLCanvasElement | null = document.querySelector("#main-canvas");
-if (canvasQuery == null) {
+if (canvasQuery === null) {
     throw new ReferenceError('Could not find #main-canvas element: something is horribly wrong. Exiting ...');
 }
 const canvas: HTMLCanvasElement = canvasQuery;
@@ -298,7 +294,7 @@ canvas.height = window.innerHeight;
 window.addEventListener('resize', handleResize(canvas));
 
 const ctx = canvas.getContext("2d");
-if (ctx == null) {
+if (ctx === null) {
     throw new ReferenceError('Canvas failed to return 2d context');
 }
 
