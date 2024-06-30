@@ -12,10 +12,13 @@ function getRandomBetween(x0: number, x1: number) {
     return Math.random()*(high-low) + low;
 }
 
+// TODO: Define resize method
 interface Drawable {
     frameId: number;
 
     updateAndDraw(timeMs: number): void;
+    draw(timeMs: number): void;
+    resize(): void;
     shutdown(): void;
 }
 
@@ -33,25 +36,25 @@ type Point2D = {
 ////////////////////////////////////////////////////
 
 type WaveProps = {
-    readonly ctx:        CanvasRenderingContext2D;
-    readonly start:      Point2D;
-    readonly end:        Point2D;
-    readonly yPeriod:    number;
-    readonly ySin:       number;
-    readonly nPoints:    number;
+    readonly ctx:       CanvasRenderingContext2D;
+    //readonly start:     Point2D;
+    //readonly end:       Point2D;
+    readonly yPeriod:   number;
+    readonly ySin:      number;
+    readonly nPoints:   number;
     //readonly xlinspace:  number;
 }
 
 class Wave implements Drawable {
     // Explicit
     readonly ctx:       CanvasRenderingContext2D;
-    readonly start:     Point2D;
-    readonly end:       Point2D;
+    start:     Point2D;
+    end:       Point2D;
     readonly yPeriod:   number;
     ySin:               number;
     readonly nPoints:   number;
     // Implicit or set later
-    readonly xlinspace: number;
+    xlinspace:          number;
     readonly tStep:     number;
     prevTimeMs:         number;
     frameId:            number;
@@ -59,14 +62,14 @@ class Wave implements Drawable {
     constructor(props: WaveProps) {
         // Explicit
         this.ctx        = props.ctx;
-        this.start      = props.start;
-        this.end        = props.end;
         this.yPeriod    = props.yPeriod;
         this.ySin       = props.ySin;
         this.nPoints    = props.nPoints;
         // Implicit
+        this.start      = this.ctx.canvas.width-50;
+        this.end        = this.ctx.canvas.width+50;
         //this.nPoints    = Math.floor((this.end.x - this.start.x) / this.xlinspace);
-        this.xlinspace  = (props.end.y - props.start.y) / props.nPoints;
+        this.xlinspace  = (this.end.y - this.start.y) / props.nPoints;
         this.tStep      = 1 / this.nPoints;
         this.prevTimeMs = -1;
         this.frameId    = -1;
@@ -250,6 +253,7 @@ class CanvasController {
                 this.drawables[i].frameId = window.requestAnimationFrame(this.drawables[i].updateAndDraw);
             }
         };
+        // TODO: perform resize of all drawables in loop
         this.loopId = setInterval(loop, this.fpMs);
     }
 
@@ -267,11 +271,12 @@ class CanvasController {
     }
 }
 
-function handleResize (canvas: HTMLCanvasElement) {
+function handleResize (controller: CanvasController, canvas: HTMLCanvasElement) {
     return function () {
         //console.log(`before: (${canvas.width}, ${canvas.height})`);
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+
         //console.log(`after: (${canvas.width}, ${canvas.height})`);
     };
 };
@@ -306,7 +311,7 @@ const sun = new Sun({
 });
 // console.log(`radius ${Math.min(ctx.canvas.width / 7, 150)}`);
 
-const NUM_WAVES = 10;
+const NUM_WAVES = 8;
 const yOffset = ctx.canvas.height / (2*NUM_WAVES);
 const ySinOffset = Math.PI / NUM_WAVES
 const drawables: Drawable[] = [sun];
@@ -317,13 +322,16 @@ for(let i = 0; i < NUM_WAVES; i++) {
         end:        { x: ctx.canvas.width+50, y: ctx.canvas.height/2 + yOffset*NUM_WAVES - yOffset*i },
         yPeriod:    2*Math.PI / 3000,
         ySin:       ySinOffset*i,
-        nPoints:    100,
+        nPoints:    8,
     }));
 }
 
 const fps = 60;
 const controller = new CanvasController(ctx, fps, drawables);
 controller.init();
+
+// TODO: Handle canvas resizes
+window.addEventListener('resize', handleResize(controller, canvas));
 //setTimeout(controller.shutdown, 5*1000);
 //controller.shutdown();
 
