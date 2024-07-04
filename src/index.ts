@@ -12,7 +12,6 @@ function getRandomBetween(x0: number, x1: number) {
     return Math.random() * (high - low) + low;
 }
 
-// TODO: Define resize method
 interface Drawable {
     frameId: number;
 
@@ -20,6 +19,10 @@ interface Drawable {
     draw(timeMs: number): void;
     resize(): void;
     shutdown(): void;
+}
+
+interface Sequential {
+    readonly sequenceNumber: number;
 }
 
 type Point2D = {
@@ -218,11 +221,19 @@ class Sun implements Drawable {
 ////////////////////////////////////////////////////
 // CanvasController
 ////////////////////////////////////////////////////
+
+type CanvasControllerDrawables = {
+    simples: Drawable[],
+    sequentials: {
+        [key: string]: (Sequential & Drawable)[]
+    }
+}
+
 class CanvasController {
     readonly ctx: CanvasRenderingContext2D;
     readonly fps: number;
     readonly fpMs: number;
-    drawables: Drawable[];
+    drawables: CanvasControllerDrawables;
     loopId: number;
 
     constructor(
@@ -310,7 +321,7 @@ const sun = new Sun({
 });
 // console.log(`radius ${Math.min(ctx.canvas.width / 7, 150)}`);
 
-const NUM_WAVES = 8;
+const NUM_WAVES = 6;
 const yOffset = ctx.canvas.height / (2 * NUM_WAVES);
 const ySinOffset = Math.PI / NUM_WAVES
 const drawables: Drawable[] = [sun];
