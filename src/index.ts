@@ -16,7 +16,6 @@ interface Drawable {
     frameId: number;
 
     updateAndDraw(timeMs: number): void;
-    draw(timeMs: number): void;
     resize(): void;
     shutdown(): void;
 }
@@ -40,15 +39,16 @@ type Point2D = {
 
 type WaveProps = {
     readonly ctx: CanvasRenderingContext2D;
-    //readonly start:     Point2D;
-    //readonly end:       Point2D;
+    readonly start: Point2D;
+    readonly end: Point2D;
     readonly yPeriod: number;
     readonly ySin: number;
     readonly nPoints: number;
+    readonly sequenceNumber: number;
     //readonly xlinspace:  number;
 }
 
-class Wave implements Drawable {
+class Wave implements Drawable, Sequential {
     // Explicit
     readonly ctx: CanvasRenderingContext2D;
     start: Point2D;
@@ -56,11 +56,18 @@ class Wave implements Drawable {
     readonly yPeriod: number;
     ySin: number;
     readonly nPoints: number;
+
+    readonly sequenceNumber: number;
+
     // Implicit or set later
     xlinspace: number;
     readonly tStep: number;
     prevTimeMs: number;
     frameId: number;
+    readonly scaleRatio: {
+        start: Point2D
+        end: Point2D
+    }
 
     constructor(props: WaveProps) {
         // Explicit
@@ -68,17 +75,31 @@ class Wave implements Drawable {
         this.yPeriod = props.yPeriod;
         this.ySin = props.ySin;
         this.nPoints = props.nPoints;
+        this.sequenceNumber = props.sequenceNumber;
+        this.start = props.start;
+        this.end = props.end;
+
         // Implicit
-        this.start = this.ctx.canvas.width - 50;
-        this.end = this.ctx.canvas.width + 50;
-        //this.nPoints    = Math.floor((this.end.x - this.start.x) / this.xlinspace);
         this.xlinspace = (this.end.y - this.start.y) / props.nPoints;
         this.tStep = 1 / this.nPoints;
         this.prevTimeMs = -1;
         this.frameId = -1;
+
+        this.scaleRatio = {
+            start: {
+                x: this.start.x / this.ctx.canvas.width,
+                y: this.start.y / this.ctx.canvas.height,
+            },
+            end: {
+                x: this.end.x / this.ctx.canvas.width,
+                y: this.end.y / this.ctx.canvas.height,
+            },
+        }
+
         // `this` will be undefined when re-called
         this.updateAndDraw = this.updateAndDraw.bind(this);
         this.draw = this.draw.bind(this);
+        this.resize = this.resize.bind(this);
         this.shutdown = this.shutdown.bind(this);
     }
 
@@ -130,6 +151,11 @@ class Wave implements Drawable {
         // this.ctx.strokeStyle = strokeRgbHex;
         // this.ctx.lineWidth = lineWidth-2;
         // this.ctx.stroke();
+    }
+
+    resize() {
+        // TODO: Implement resize on Wave
+        this.start = this.scaleRatio.start;
     }
 
     shutdown() {
@@ -201,6 +227,10 @@ class Sun implements Drawable {
         this.ctx.fillStyle = fillRgbHex;
         this.ctx.arc(this.origin.x, this.origin.y, this.radius, 0, 2 * Math.PI);
         this.ctx.fill();
+    }
+
+    resize() {
+        // TODO: Implement resize on Sun
     }
 
     shutdown() {
@@ -327,9 +357,14 @@ const sun = new Sun({
 const NUM_WAVES = 6;
 const yOffset = ctx.canvas.height / (2 * NUM_WAVES);
 const ySinOffset = Math.PI / NUM_WAVES
-const drawables: Drawable[] = [sun];
+const drawables: CanvasControllerDrawables = {
+    simples: [sun],
+    sequentials: {
+        waves: [],
+    }
+}
 for (let i = 0; i < NUM_WAVES; i++) {
-    drawables.push(new Wave({
+    drawables.sequentials.waves.push(new Wave({
         ctx: ctx,
         start: { x: -50, y: ctx.canvas.height / 2 - yOffset * NUM_WAVES + yOffset * i * 2 },
         end: { x: ctx.canvas.width + 50, y: ctx.canvas.height / 2 + yOffset * NUM_WAVES - yOffset * i },
