@@ -6,7 +6,10 @@ function lerp(x0: number, x1: number, t: number) {
     return x0 + (x1 - x0) * t
 }
 
-function getRandomBetween(x0: number, x1: number) {
+function getRandomBetween(x0: number, x1: number): number {
+    if (x0 === x1) {
+        return x0;
+    }
     const low = Math.min(x0, x1);
     const high = Math.max(x0, x1);
     return Math.random() * (high - low) + low;
@@ -16,7 +19,7 @@ interface Drawable {
     frameId: number;
 
     updateAndDraw(timeMs: number): void;
-    resize(): void;
+    resize(scale: Point2DProps): void;
     shutdown(): void;
 }
 
@@ -24,9 +27,23 @@ interface Sequential {
     readonly sequenceNumber: number;
 }
 
-type Point2D = {
-    readonly x: number;
-    readonly y: number;
+type Point2DProps = {
+    x: number;
+    y: number;
+}
+class Point2D {
+    x: number;
+    y: number;
+
+    constructor({ x, y }: Point2DProps) {
+        this.x = x;
+        this.y = y;
+    }
+
+    scale(factor: Point2D) {
+        this.x *= factor.x;
+        this.y *= factor.y;
+    }
 }
 
 
@@ -37,15 +54,22 @@ type Point2D = {
 // Wave
 ////////////////////////////////////////////////////
 
-type WaveProps = {
+type WaveInitProps = {
     readonly ctx: CanvasRenderingContext2D;
     readonly start: Point2D;
     readonly end: Point2D;
-    readonly yPeriod: number;
     readonly ySin: number;
+    readonly yPeriod: number;
     readonly nPoints: number;
     readonly sequenceNumber: number;
-    //readonly xlinspace:  number;
+}
+
+type WaveDrawProps = {
+    yMagnitude: number,
+    readonly xJitter: number,
+    readonly yJitter: number,
+    readonly strokeRgbHex: string,
+    readonly lineWidth: number,
 }
 
 class Wave implements Drawable, Sequential {
@@ -57,10 +81,17 @@ class Wave implements Drawable, Sequential {
     ySin: number;
     readonly nPoints: number;
 
+    // Sequential
     readonly sequenceNumber: number;
+
+    // Draw fn
+    drawProps: WaveDrawProps;
+    xs: Float32Array;
+    ys: Float32Array;
 
     // Implicit or set later
     xlinspace: number;
+    ylinspace: number;
     readonly tStep: number;
     prevTimeMs: number;
     frameId: number;
@@ -69,31 +100,48 @@ class Wave implements Drawable, Sequential {
         end: Point2D
     }
 
-    constructor(props: WaveProps) {
+    constructor(initProps: WaveInitProps, drawProps: WaveDrawProps) {
         // Explicit
-        this.ctx = props.ctx;
-        this.yPeriod = props.yPeriod;
-        this.ySin = props.ySin;
-        this.nPoints = props.nPoints;
-        this.sequenceNumber = props.sequenceNumber;
-        this.start = props.start;
-        this.end = props.end;
+        this.ctx = initProps.ctx;
+        this.yPeriod = initProps.yPeriod;
+        this.ySin = initProps.ySin;
+        this.nPoints = initProps.nPoints;
+        this.sequenceNumber = initProps.sequenceNumber;
+        this.start = initProps.start;
+        this.end = initProps.end;
+
+        this.drawProps = drawProps;
 
         // Implicit
-        this.xlinspace = (this.end.y - this.start.y) / props.nPoints;
         this.tStep = 1 / this.nPoints;
         this.prevTimeMs = -1;
         this.frameId = -1;
 
         this.scaleRatio = {
-            start: {
+            start: new Point2D({
                 x: this.start.x / this.ctx.canvas.width,
-                y: this.start.y / this.ctx.canvas.height,
-            },
-            end: {
+                y: this.start.y / this.ctx.canvas.height
+            }),
+            end: new Point2D({
                 x: this.end.x / this.ctx.canvas.width,
-                y: this.end.y / this.ctx.canvas.height,
-            },
+                y: this.end.y / this.ctx.canvas.height
+            }),
+        }
+
+        // NOTE: Init TypedArrays
+        this.xlinspace = (this.end.x - this.start.x) / ((initProps.nPoints - 1) || 1);
+        this.ylinspace = (this.end.y - this.start.y) / ((initProps.nPoints - 1) || 1);
+        this.xs = new Float32Array(this.nPoints);   // optimize calcs
+        this.ys = new Float32Array(this.nPoints);
+        let x = this.start.x,
+            y = this.start.y,
+            t = 0;
+
+        for (let i = 0; i < this.nPoints; i += 1) {
+            this.xs[i] = x
+                + getRandomBetween(-drawProps.xJitter, drawProps.xJitter);
+
+            x += this.xlinspace;
         }
 
         // `this` will be undefined when re-called
@@ -108,54 +156,66 @@ class Wave implements Drawable, Sequential {
             this.prevTimeMs = timeMs;
         }
 
+        // NOTE: Update step
         const elapsed = timeMs - this.prevTimeMs;
         this.ySin += elapsed * this.yPeriod;
-        const yMagnitude = 200,
-            strokeRgbHex = '#a0a0cc95',
-            xJitter = 0,
-            yJitter = 2,
-            lineWidth = 0.75;
-
-        this.draw(this.ySin, yMagnitude, xJitter, yJitter, strokeRgbHex, lineWidth);
         this.prevTimeMs = timeMs;
+
+        // NOTE: Draw step
+        this.draw(this.ySin, this.drawProps);
     }
 
     draw(
-        ySin: number, yMagnitude: number,
-        xJitter: number, yJitter: number,
-        strokeRgbHex: string, lineWidth: number
+        ySin: number,
+        drawProps: WaveDrawProps
     ) {
-        let x, y;
         this.ctx.beginPath();
-        this.ctx.strokeStyle = strokeRgbHex;
-        this.ctx.lineWidth = lineWidth;
-        for (let t = 0; t <= 1; t += this.tStep) {
-            x = lerp(this.start.x, this.end.x, t)
-                + getRandomBetween(-xJitter, xJitter);
-            y = lerp(this.start.y, this.end.y, t)
-                + Math.sin(t * 3 * Math.PI + ySin) * yMagnitude
-                + getRandomBetween(-yJitter, yJitter);
+        this.ctx.strokeStyle = drawProps.strokeRgbHex;
+        this.ctx.lineWidth = drawProps.lineWidth;
 
+        let y = this.start.y,
+            t = 0;
+        for (let i = 0; i < this.nPoints; i += 1) {
+            this.ys[i] = y
+                + Math.sin(t * 3 * Math.PI + ySin) * drawProps.yMagnitude
+                + getRandomBetween(-drawProps.yJitter, drawProps.yJitter);
+
+            y += this.ylinspace;
+            t += this.tStep;
+        }
+
+        this.ys.forEach((val, i) => {
             /////////////////////
             // STROKE
             //this.ctx.strokeStyle = "black";
-            this.ctx.lineTo(x, y);
+            this.ctx.lineTo(
+                this.xs[i] + getRandomBetween(-drawProps.xJitter, drawProps.xJitter),
+                val
+            )
 
             /////////////////////
             // FILL
             // this.ctx.fillStyle = "#fff";
             // this.ctx.arc(x, y, 3, 0, 2*Math.PI);
             // this.ctx.fill();
-        }
+        });
+
         this.ctx.stroke();
-        // this.ctx.strokeStyle = strokeRgbHex;
-        // this.ctx.lineWidth = lineWidth-2;
-        // this.ctx.stroke();
     }
 
-    resize() {
-        // TODO: Implement resize on Wave
-        this.start = this.scaleRatio.start;
+    resize(scale: Point2D) {
+        this.start.scale(scale);
+        this.end.scale(scale);
+        console.log(scale);
+
+        // this.xlinspace = (this.end.x - this.start.x) / this.nPoints;
+        // this.ylinspace = (this.end.y - this.start.y) / this.nPoints;
+        this.xlinspace *= scale.x;
+        this.ylinspace *= scale.y;
+
+        this.xs.forEach((_, i) => this.xs[i] *= scale.x);
+        this.drawProps.yMagnitude *= scale.y;
+
     }
 
     shutdown() {
@@ -187,7 +247,7 @@ class Sun implements Drawable {
     // Explicit
     readonly ctx: CanvasRenderingContext2D;
     readonly origin: Point2D;
-    readonly radius: number;
+    radius: number;
     readonly fillRgbHex: string;
     // Implicit or set later
     prevTimeMs: number;
@@ -229,13 +289,14 @@ class Sun implements Drawable {
         this.ctx.fill();
     }
 
-    resize() {
-        // TODO: Implement resize on Sun
+    resize(scale: Point2D) {
+        this.origin.scale(scale);
+        this.radius *= scale.x;
     }
 
     shutdown() {
         if (this.frameId === -1) {
-            console.error('Calling shutdown() on Wave object but Wave object not in updateAndDraw loop');
+            console.error('Calling shutdown() on Sun object but Sun object not in updateAndDraw loop');
             return
         }
         window.cancelAnimationFrame(this.frameId);
@@ -254,17 +315,20 @@ class Sun implements Drawable {
 
 type CanvasControllerDrawables = {
     simples: Drawable[],
-    sequentials: {
-        [key: string]: (Sequential & Drawable)[]
-    },
-}
+    sequentials: Record<string, (Sequential & Drawable)[]>,
+};
 
 class CanvasController {
     readonly ctx: CanvasRenderingContext2D;
     readonly fps: number;
-    readonly fpMs: number;
     drawables: CanvasControllerDrawables;
+
     loopId: number;
+    readonly fpMs: number;
+    dims: {
+        width: number,
+        height: number,
+    }
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -278,6 +342,10 @@ class CanvasController {
         // Implicit
         this.loopId = -1;
         this.fpMs = 1 / fps * 1000;
+        this.dims = {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
         // Bindings
         this.init = this.init.bind(this);
         this.shutdown = this.shutdown.bind(this);
@@ -289,16 +357,44 @@ class CanvasController {
             return
         }
 
+        window.addEventListener('resize', fHandleResize(this, this.ctx.canvas));
         const loop = () => {
             this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
             for (let i = 0; i < this.drawables.simples.length; i++) {
                 this.drawables.simples[i].frameId = window.requestAnimationFrame(this.drawables.simples[i].updateAndDraw);
             }
+
+            for (let seq_type in this.drawables.sequentials) {
+                let seqs = this.drawables.sequentials[seq_type]
+                for (let i = 0; i < seqs.length; i++) {
+                    seqs[i].frameId = window.requestAnimationFrame(seqs[i].updateAndDraw);
+                }
+            }
         };
 
-        // TODO: perform resize of all drawables in loop
         this.loopId = setInterval(loop, this.fpMs);
+
+    }
+
+    resize() {
+        let scaleFactorX = window.innerWidth / this.dims.width;
+        let scaleFactorY = window.innerHeight / this.dims.height;
+        let scale = new Point2D({ x: scaleFactorX, y: scaleFactorY });
+
+        this.dims.width = window.innerWidth;
+        this.dims.height = window.innerHeight;
+
+        for (let i = 0; i < this.drawables.simples.length; i++) {
+            this.drawables.simples[i].resize(scale);
+        }
+
+        for (let seq_type in this.drawables.sequentials) {
+            let seqs = this.drawables.sequentials[seq_type]
+            for (let i = 0; i < seqs.length; i++) {
+                seqs[i].resize(scale)
+            }
+        }
     }
 
     shutdown() {
@@ -312,16 +408,21 @@ class CanvasController {
         for (let i = 0; i < this.drawables.simples.length; i++) {
             this.drawables.simples[i].shutdown();
         }
+
+        for (let seq_type in this.drawables.sequentials) {
+            let seqs = this.drawables.sequentials[seq_type]
+            for (let i = 0; i < seqs.length; i++) {
+                seqs[i].shutdown();
+            }
+        }
     }
 }
 
-function handleResize(controller: CanvasController, canvas: HTMLCanvasElement) {
+function fHandleResize(controller: CanvasController, canvas: HTMLCanvasElement) {
     return function () {
-        //console.log(`before: (${canvas.width}, ${canvas.height})`);
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
-        //console.log(`after: (${canvas.width}, ${canvas.height})`);
+        controller.resize();
     };
 };
 ////////////////////////////////////////////////////
@@ -348,7 +449,7 @@ if (ctx === null) {
 
 const sun = new Sun({
     ctx: ctx,
-    origin: { x: ctx.canvas.width / 3, y: ctx.canvas.height / 2 },
+    origin: new Point2D({ x: ctx.canvas.width / 3, y: ctx.canvas.height / 2 }),
     radius: Math.min(ctx.canvas.width / 7, 150),
     fillRgbHex: '#b8360f',
 });
@@ -363,23 +464,39 @@ const drawables: CanvasControllerDrawables = {
         waves: [],
     }
 }
+
+
+const waveDrawProps = {
+    yMagnitude: 200,
+    strokeRgbHex: '#a0a0cc95',
+    xJitter: 0,
+    yJitter: 0,
+    lineWidth: 0.75,
+}
+
 for (let i = 0; i < NUM_WAVES; i++) {
     drawables.sequentials.waves.push(new Wave({
+        // NOTE: WaveInitProps
         ctx: ctx,
-        start: { x: -50, y: ctx.canvas.height / 2 - yOffset * NUM_WAVES + yOffset * i * 2 },
-        end: { x: ctx.canvas.width + 50, y: ctx.canvas.height / 2 + yOffset * NUM_WAVES - yOffset * i },
-        yPeriod: 2 * Math.PI / 3000,
+        start: new Point2D({
+            x: -10,
+            y: ctx.canvas.height / 2 - yOffset * NUM_WAVES + yOffset * i * 2
+        }),
+        end: new Point2D({
+            x: ctx.canvas.width + 10,
+            y: ctx.canvas.height / 2 + yOffset * NUM_WAVES - yOffset * i
+        }),
+        nPoints: 16,
+        yPeriod: 2 * Math.PI / 3000, // NOTE: 1 period per 3000ms
         ySin: ySinOffset * i,
-        nPoints: 8,
-    }));
+        sequenceNumber: i,
+    }, waveDrawProps));
 }
 
 const fps = 60;
 const controller = new CanvasController(ctx, fps, drawables);
 controller.init();
 
-// TODO: Handle canvas resizes
-window.addEventListener('resize', handleResize(controller, canvas));
-//setTimeout(controller.shutdown, 5*1000);
+//setTimeout(controller.shutdown, 5 * 1000);
 //controller.shutdown();
 
