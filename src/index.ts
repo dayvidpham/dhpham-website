@@ -226,7 +226,7 @@ type CanvasControllerDrawables = {
     simples: Drawable[],
     sequentials: {
         [key: string]: (Sequential & Drawable)[]
-    }
+    },
 }
 
 class CanvasController {
@@ -239,7 +239,7 @@ class CanvasController {
     constructor(
         ctx: CanvasRenderingContext2D,
         fps: number,
-        drawables: Drawable[],
+        drawables: CanvasControllerDrawables,
     ) {
         // Explicit
         this.ctx = ctx;
@@ -258,12 +258,15 @@ class CanvasController {
             console.error('Called loop() in CanvasController instance when already looping. Returning.');
             return
         }
+
         const loop = () => {
             this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-            for (let i = 0; i < this.drawables.length; i++) {
-                this.drawables[i].frameId = window.requestAnimationFrame(this.drawables[i].updateAndDraw);
+
+            for (let i = 0; i < this.drawables.simples.length; i++) {
+                this.drawables.simples[i].frameId = window.requestAnimationFrame(this.drawables.simples[i].updateAndDraw);
             }
         };
+
         // TODO: perform resize of all drawables in loop
         this.loopId = setInterval(loop, this.fpMs);
     }
@@ -276,8 +279,8 @@ class CanvasController {
         clearInterval(this.loopId);
         this.loopId = -1;
 
-        for (let i = 0; i < this.drawables.length; i++) {
-            this.drawables[i].shutdown();
+        for (let i = 0; i < this.drawables.simples.length; i++) {
+            this.drawables.simples[i].shutdown();
         }
     }
 }
