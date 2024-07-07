@@ -171,7 +171,7 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 const ctx = canvas.getContext("2d", {
-    alpha: false // optimization: https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas#turn_off_transparency
+    alpha: true // optimization: https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas#turn_off_transparency
 });
 if (ctx === null) {
     throw new ReferenceError('Canvas failed to return 2d context');
@@ -187,9 +187,9 @@ const sun = new Sun({
     fillRgbHex: '#b8360f',
 });
 
-const NUM_WAVES = 6;
+const NUM_WAVES = 16;
 const yOffset = ctx.canvas.height / (2 * NUM_WAVES);
-const ySinOffset = Math.PI / NUM_WAVES
+const ySinOffset = (Math.PI) / NUM_WAVES
 const drawables: CanvasControllerDrawables = {
     simples: [sun],
     sequentials: {
@@ -214,13 +214,13 @@ for (let i = 0; i < NUM_WAVES; i++) {
         ctx: ctx,
         start: new Point2D({
             x: -10,
-            y: ctx.canvas.height / 2 - yOffset * NUM_WAVES + yOffset * i * 2
+            y: ctx.canvas.height / 2 - (yOffset * NUM_WAVES) - (yOffset * i)
         }),
         end: new Point2D({
             x: ctx.canvas.width + 10,
-            y: ctx.canvas.height / 2 + yOffset * NUM_WAVES - yOffset * i
+            y: ctx.canvas.height / 2 + (0.25 * yOffset * NUM_WAVES) + (yOffset * i * 2)
         }),
-        nPoints: 24,
+        nPoints: 10,
         yPeriod: 2 * Math.PI / 3000, // NOTE: 1 period per 3000ms
         ySin: ySinOffset * i,
         sequenceNumber: i,
