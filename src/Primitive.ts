@@ -2,7 +2,7 @@ export interface Drawable {
     frameId: number;
 
     updateAndDraw(timeMs: number): void;
-    resize(scale: Point2DProps): void;
+    resize(scale: Point2D): void;
     shutdown(): void;
 }
 
@@ -10,15 +10,11 @@ export interface Sequential {
     readonly sequenceNumber: number;
 }
 
-export type Point2DProps = {
-    x: number;
-    y: number;
-}
 export class Point2D {
     x: number;
     y: number;
 
-    constructor({ x, y }: Point2DProps) {
+    constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
     }

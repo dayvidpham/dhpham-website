@@ -75,14 +75,14 @@ export class Wave implements Drawable, Sequential {
         this.frameId = -1;
 
         this.scaleRatio = {
-            start: new Point2D({
-                x: this.start.x / this.ctx.canvas.width,
-                y: this.start.y / this.ctx.canvas.height
-            }),
-            end: new Point2D({
-                x: this.end.x / this.ctx.canvas.width,
-                y: this.end.y / this.ctx.canvas.height
-            }),
+            start: new Point2D(
+                this.start.x / this.ctx.canvas.width,
+                this.start.y / this.ctx.canvas.height
+            ),
+            end: new Point2D(
+                this.end.x / this.ctx.canvas.width,
+                this.end.y / this.ctx.canvas.height
+            ),
         }
 
         // NOTE: Init TypedArrays
@@ -168,7 +168,7 @@ export class Wave implements Drawable, Sequential {
 
         this.xs.forEach((_, i) => this.xs[i] *= scale.x);
         this.drawProps.yMagnitude = clamp(this.drawProps.yMagnitude * scale.x, this.drawProps.minYMagnitude, this.drawProps.maxYMagnitude);
-        console.log(`scale.x: ${scale.x}, scale.y: ${scale.y}, yMagnitude: ${this.drawProps.yMagnitude}`)
+        //console.log(`scale.x: ${scale.x}, scale.y: ${scale.y}, yMagnitude: ${this.drawProps.yMagnitude}`)
 
     }
 

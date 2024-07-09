@@ -77,7 +77,7 @@ class CanvasController {
     resize(): void {
         let scaleFactorX = window.innerWidth / this.dims.width;
         let scaleFactorY = window.innerHeight / this.dims.height;
-        let scale = new Point2D({ x: scaleFactorX, y: scaleFactorY });
+        let scale = new Point2D(scaleFactorX, scaleFactorY);
 
         this.dims.width = window.innerWidth;
         this.dims.height = window.innerHeight;
@@ -179,7 +179,7 @@ if (ctx === null) {
 
 const sun = new Sun({
     ctx: ctx,
-    origin: new Point2D({ x: ctx.canvas.width / 3, y: ctx.canvas.height / 2 }),
+    origin: new Point2D(ctx.canvas.width / 3, ctx.canvas.height / 2),
 }, {
     radius: ctx.canvas.width / 7,
     minRadius: 100,
@@ -212,14 +212,14 @@ for (let i = 0; i < NUM_WAVES; i++) {
     drawables.sequentials.waves.push(new Wave({
         // NOTE: WaveInitProps
         ctx: ctx,
-        start: new Point2D({
-            x: -10,
-            y: ctx.canvas.height / 2 - (yOffset * NUM_WAVES) - (yOffset * i)
-        }),
-        end: new Point2D({
-            x: ctx.canvas.width + 10,
-            y: ctx.canvas.height / 2 + (0.25 * yOffset * NUM_WAVES) + (yOffset * i * 2)
-        }),
+        start: new Point2D(
+            -10,
+            ctx.canvas.height / 2 - (yOffset * NUM_WAVES) - (yOffset * i)
+        ),
+        end: new Point2D(
+            ctx.canvas.width + 10,
+            ctx.canvas.height / 2 + (0.25 * yOffset * NUM_WAVES) + (yOffset * i * 2)
+        ),
         nPoints: 10,
         yPeriod: 2 * Math.PI / 3000, // NOTE: 1 period per 3000ms
         ySin: ySinOffset * i,
@@ -230,6 +230,20 @@ for (let i = 0; i < NUM_WAVES; i++) {
 const fps = 60;
 const controller = new CanvasController(ctx, fps, drawables);
 controller.init();
+
+const SIN_PERIOD = 2 * Math.PI;
+const sampleCircle = () => {
+    const random = Math.random() * SIN_PERIOD;
+    const x = Math.cos(random) ** 2;
+    return new Point2D(
+        x,
+        1 - x
+    )
+
+    console.log(`Computing ${NUM_SAMPLES} random points on a circle took ${(endTime - startTime)} ms`)
+    setTimeout(sampleCircle, 0);
+}
+sampleCircle();
 
 //setTimeout(controller.shutdown, 5 * 1000);
 //controller.shutdown();
