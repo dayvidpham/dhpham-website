@@ -1,5 +1,6 @@
+import { noise } from './Perlin';
 import { Drawable, Sequential, Point2D } from './Primitive'
-import { getRandomBetween, clamp } from './Utils';
+import { getRandomBetween, clamp, lerp } from './Utils';
 
 export type WaveInitProps = {
     readonly ctx: CanvasRenderingContext2D;
@@ -44,6 +45,7 @@ export class Wave implements Drawable, Sequential {
     ylinspace: number;
     readonly tStep: number;
     prevTimeMs: number;
+    accumTimeMs: number;
     frameId: number;
     readonly scaleRatio: {
         start: Point2D
@@ -71,6 +73,7 @@ export class Wave implements Drawable, Sequential {
 
         // Implicit
         this.tStep = 1 / this.nPoints;
+        this.accumTimeMs = 0;
         this.prevTimeMs = -1;
         this.frameId = -1;
 
@@ -85,6 +88,7 @@ export class Wave implements Drawable, Sequential {
             ),
         }
 
+        // TODO: Should place in a private init() function
         // NOTE: Init TypedArrays
         this.xlinspace = (this.end.x - this.start.x) / ((initProps.nPoints - 1) || 1);
         this.ylinspace = (this.end.y - this.start.y) / ((initProps.nPoints - 1) || 1);
@@ -99,9 +103,12 @@ export class Wave implements Drawable, Sequential {
                 + getRandomBetween(-drawProps.xJitter, drawProps.xJitter);
 
             x += this.xlinspace;
+            y += this.ylinspace;
         }
 
-        // `this` will be undefined when re-called
+        // WARN: Must manually bind instance methods to their 
+        // own instance because JavaScript sucks.
+        // Else `this` will be undefined when re-called
         this.updateAndDraw = this.updateAndDraw.bind(this);
         this.draw = this.draw.bind(this);
         this.resize = this.resize.bind(this);
@@ -117,23 +124,40 @@ export class Wave implements Drawable, Sequential {
         const elapsed = timeMs - this.prevTimeMs;
         this.ySin += elapsed * this.yPeriod;
         this.prevTimeMs = timeMs;
+        this.accumTimeMs += elapsed;
 
         // NOTE: Draw step
         this.draw();
     }
 
     draw() {
+        this.ctx.save()
         this.ctx.beginPath();
         this.ctx.strokeStyle = this.drawProps.strokeRgbHex;
         this.ctx.lineWidth = this.drawProps.lineWidth;
 
         let y = this.start.y;
+        let x = this.start.x;
         let t = 0;
         for (let i = 0; i < this.nPoints; i += 1) {
-            this.ys[i] = y
+            const perlin = noise(x, y, this.accumTimeMs * 0.001) - 0.5;
+            //console.log(perlin)
+            const yPerlinMagnitude = 64;
+            const yPerlin = perlin * yPerlinMagnitude;
+            //console.log(this.ys[0]);
+            this.ys[i] =
+                y
+                + yPerlin
                 + Math.sin(t * 3 * Math.PI + this.ySin) * this.drawProps.yMagnitude
-                + getRandomBetween(-this.drawProps.yJitter, this.drawProps.yJitter);
+                + getRandomBetween(-this.drawProps.yJitter, this.drawProps.yJitter)
 
+            const xPerlinMagnitude = 192;
+            const xPerlin = perlin * xPerlinMagnitude;
+            this.xs[i] =
+                x
+                + xPerlin
+
+            x += this.xlinspace;
             y += this.ylinspace;
             t += this.tStep;
         }
@@ -155,6 +179,7 @@ export class Wave implements Drawable, Sequential {
         });
 
         this.ctx.stroke();
+        this.ctx.restore();
     }
 
     resize(scale: Point2D) {

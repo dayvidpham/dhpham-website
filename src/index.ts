@@ -40,10 +40,12 @@ class CanvasController {
         this.fpMs = 1 / fps * 1000;
         this.dims = {
             width: window.innerWidth,
-            height: window.innerHeight
+            height: window.innerHeight,
         };
         // Bindings
         this.init = this.init.bind(this);
+        this.renderLoop = this.renderLoop.bind(this);
+        this.resize = this.resize.bind(this);
         this.shutdown = this.shutdown.bind(this);
     }
 
@@ -52,27 +54,24 @@ class CanvasController {
             console.error('Called loop() in CanvasController instance when already looping. Returning.');
             return
         }
-
         window.addEventListener('resize', fDebouncer(fHandleResize(this, this.ctx.canvas), 200));
-
-        const loop = () => {
-            this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-
-            for (let i = 0; i < this.drawables.simples.length; i++) {
-                this.drawables.simples[i].frameId = window.requestAnimationFrame(this.drawables.simples[i].updateAndDraw);
-            }
-
-            for (let seq_type in this.drawables.sequentials) {
-                let seqs = this.drawables.sequentials[seq_type]
-                for (let i = 0; i < seqs.length; i++) {
-                    seqs[i].frameId = window.requestAnimationFrame(seqs[i].updateAndDraw);
-                }
-            }
-        };
-
-        this.loopId = setInterval(loop, this.fpMs);
-
+        this.loopId = setInterval(this.renderLoop, this.fpMs);
     }
+
+    renderLoop(): void {
+        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+
+        for (let i = 0; i < this.drawables.simples.length; i++) {
+            this.drawables.simples[i].frameId = window.requestAnimationFrame(this.drawables.simples[i].updateAndDraw);
+        }
+
+        for (let seq_type in this.drawables.sequentials) {
+            let seqs = this.drawables.sequentials[seq_type]
+            for (let i = 0; i < seqs.length; i++) {
+                seqs[i].frameId = window.requestAnimationFrame(seqs[i].updateAndDraw);
+            }
+        }
+    };
 
     resize(): void {
         let scaleFactorX = window.innerWidth / this.dims.width;
@@ -199,9 +198,9 @@ const drawables: CanvasControllerDrawables = {
 
 
 const waveDrawProps = {
-    yMagnitude: ctx.canvas.width / 4,
-    minYMagnitude: 200,
-    maxYMagnitude: 300,
+    yMagnitude: ctx.canvas.width * 0.2,
+    minYMagnitude: 125,
+    maxYMagnitude: 170,
     strokeRgbHex: '#a0a0cc95',
     xJitter: 0,
     yJitter: 0,
@@ -220,7 +219,7 @@ for (let i = 0; i < NUM_WAVES; i++) {
             ctx.canvas.width + 10,
             ctx.canvas.height / 2 + (0.25 * yOffset * NUM_WAVES) + (yOffset * i * 2)
         ),
-        nPoints: 10,
+        nPoints: 12,
         yPeriod: 2 * Math.PI / 3000, // NOTE: 1 period per 3000ms
         ySin: ySinOffset * i,
         sequenceNumber: i,
@@ -231,20 +230,6 @@ const fps = 60;
 const controller = new CanvasController(ctx, fps, drawables);
 controller.init();
 
-const SIN_PERIOD = 2 * Math.PI;
-const sampleCircle = () => {
-    const random = Math.random() * SIN_PERIOD;
-    const x = Math.cos(random) ** 2;
-    return new Point2D(
-        x,
-        1 - x
-    )
-
-    console.log(`Computing ${NUM_SAMPLES} random points on a circle took ${(endTime - startTime)} ms`)
-    setTimeout(sampleCircle, 0);
-}
-sampleCircle();
-
-//setTimeout(controller.shutdown, 5 * 1000);
+// setTimeout(controller.shutdown, 1 * 1000);
 //controller.shutdown();
 

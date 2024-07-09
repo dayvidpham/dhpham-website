@@ -17,7 +17,7 @@ export function clamp(x: number, min: number, max: number): number {
     return Math.max(min, Math.min(x, max));
 }
 
-export function rand2dNorm(): Point2D {
+export function rand2DNormed(): Point2D {
     // Returns a random normalized vector on the unit circle
     const theta = Math.random() * Math.PI;
     const x = Math.cos(theta) ** 2;
@@ -27,11 +27,20 @@ export function rand2dNorm(): Point2D {
     )
 }
 
-// Return a matrix of 2d gradients
-export function initPerlinGrid2d(xN: number, tN: number): number[][] {
-    return [[]]
+const HALF_PI = Math.PI / 2;
+const TWO_PI = 2 * Math.PI;
+
+export function rand3DNormed(): number[] {
+    // From these articles:
+    // https://mathworld.wolfram.com/SpherePointPicking.html
+    // https://math.stackexchange.com/questions/1585975/how-to-generate-random-points-on-a-sphere
+    let azimuthalAngle = TWO_PI * Math.random();
+    let polarAngle = Math.acos(2 * Math.random() - 1) - HALF_PI;
+    // To [x, y, z]
+    return [
+        Math.cos(polarAngle) * Math.cos(azimuthalAngle),
+        Math.cos(polarAngle) * Math.sin(azimuthalAngle),
+        Math.sin(polarAngle),
+    ]
 }
 
-export function samplePerlinGrid2d(grid: number[][], x: number, t: number): number {
-    return 0
-}
