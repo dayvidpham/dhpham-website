@@ -186,19 +186,20 @@ const sun = new Sun({
     fillRgbHex: '#b8360f',
 });
 
-const NUM_WAVES = 16;
+const NUM_WAVES = 10;
 const yOffset = ctx.canvas.height / (2 * NUM_WAVES);
-const ySinOffset = (Math.PI) / NUM_WAVES
+const ySinOffset = (Math.PI * 1.3) / NUM_WAVES
 const drawables: CanvasControllerDrawables = {
     simples: [sun],
     sequentials: {
         waves: [],
+        bgWaves: [],
     }
 }
 
 
 const waveDrawProps = {
-    yMagnitude: ctx.canvas.width * 0.2,
+    yMagnitude: ctx.canvas.width * 0.1,
     minYMagnitude: 125,
     maxYMagnitude: 170,
     strokeRgbHex: '#a0a0cc95',
@@ -219,7 +220,7 @@ for (let i = 0; i < NUM_WAVES; i++) {
             ctx.canvas.width + 10,
             ctx.canvas.height / 2 + (0.25 * yOffset * NUM_WAVES) + (yOffset * i * 2)
         ),
-        nPoints: 12,
+        nPoints: 64,
         yPeriod: 2 * Math.PI / 3000, // NOTE: 1 period per 3000ms
         ySin: ySinOffset * i,
         sequenceNumber: i,

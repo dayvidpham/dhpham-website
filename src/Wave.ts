@@ -142,16 +142,16 @@ export class Wave implements Drawable, Sequential {
         for (let i = 0; i < this.nPoints; i += 1) {
             const perlin = noise(x, y, this.accumTimeMs * 0.001) - 0.5;
             //console.log(perlin)
-            const yPerlinMagnitude = 64;
+            const yPerlinMagnitude = 32 * 4 * (Math.sin(-Math.PI / 4 + i / this.nPoints * Math.PI) ** 2);
             const yPerlin = perlin * yPerlinMagnitude;
             //console.log(this.ys[0]);
             this.ys[i] =
                 y
                 + yPerlin
                 + Math.sin(t * 3 * Math.PI + this.ySin) * this.drawProps.yMagnitude
-                + getRandomBetween(-this.drawProps.yJitter, this.drawProps.yJitter)
+            // + getRandomBetween(-this.drawProps.yJitter, this.drawProps.yJitter)
 
-            const xPerlinMagnitude = 192;
+            const xPerlinMagnitude = 32 * 4 * (Math.sin(-Math.PI / 4 + i / this.nPoints * Math.PI) ** 2);
             const xPerlin = perlin * xPerlinMagnitude;
             this.xs[i] =
                 x
