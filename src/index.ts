@@ -15,9 +15,11 @@ type CanvasControllerDrawables = {
 };
 
 class CanvasController {
+    // Explicit
     readonly fps: number;
     drawables: CanvasControllerDrawables;
 
+    // Implicit
     mainCtx: CanvasRenderingContext2D;
     staticCtx: CanvasRenderingContext2D;
     loopId: number;
@@ -26,6 +28,7 @@ class CanvasController {
         width: number,
         height: number,
     }
+    backgroundColor: string;
 
     constructor(
         fps: number,
@@ -46,6 +49,7 @@ class CanvasController {
         // Explicit
         this.fps = fps;
         this.drawables = drawables;
+
         // Implicit
         this.loopId = -1;
         this.fpMs = 1 / fps * 1000;
@@ -53,6 +57,7 @@ class CanvasController {
             width: window.innerWidth,
             height: window.innerHeight,
         };
+        this.backgroundColor = '#131313';
 
         this.mainCtx = this.initContext('#main-canvas', { alpha: true });
         // optimization: https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Optimizing_canvas#turn_off_transparency
@@ -81,7 +86,7 @@ class CanvasController {
     }
 
     private initStatic() {
-        this.drawBackground('#131313')
+        this.drawBackground(this.backgroundColor);
 
         const sun = new Sun({
             ctx: this.staticCtx,
@@ -181,7 +186,7 @@ class CanvasController {
 
         this.staticCtx.canvas.width = window.innerWidth;
         this.staticCtx.canvas.height = window.innerHeight;
-        this.drawBackground('#131313');
+        this.drawBackground(this.backgroundColor);
 
         this.dims.width = window.innerWidth;
         this.dims.height = window.innerHeight;
