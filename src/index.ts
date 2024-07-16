@@ -219,51 +219,6 @@ class CanvasController {
     }
 }
 
-/*
-const fDebouncer = (fn: CallableFunction, thresholdMs: number, immediately: boolean = false) => {
-    let bouncing: number | null;
-
-    const debounceContext = () => {
-        const delayedExecutor = () => {
-            if (~immediately) {
-                fn()
-            }
-            bouncing = null; // resets debouncer
-        }
-
-        if (bouncing) {
-            clearTimeout(bouncing);
-        }
-        else if (immediately) {
-            fn()
-        }
-
-        bouncing = setTimeout(delayedExecutor, thresholdMs);
-    }
-    return debounceContext;
-}
-
-function fHandleResize(controller: CanvasController, canvas: HTMLCanvasElement) {
-    // NOTE: Debouncing adapted from:
-    // - http://unscriptable.com/2009/03/20/debouncing-javascript-methods/
-    // - https://www.paulirish.com/2009/throttled-smartresize-jquery-event-handler/
-
-    const handleResize = () => {
-        //console.log(`canvas.width: ${canvas.width}, canvas.height: ${canvas.height}`)
-        //console.log(`window.innerWidth: ${window.innerWidth}, window.innerHeight: ${window.innerHeight}`)
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        controller.resize();
-    };
-
-    return handleResize;
-};
-*/
-////////////////////////////////////////////////////
-
-
-
-
 
 ////////////////////////////////////////////////////
 // Init canvas
