@@ -160,13 +160,13 @@ class CanvasController {
         this.mainCtx.clearRect(0, 0, this.mainCtx.canvas.width, this.mainCtx.canvas.height);
 
         for (let i = 0; i < this.drawables.static.length; i++) {
-            this.drawables.static[i].frameId = window.requestAnimationFrame(this.drawables.static[i].fRender(this.mainCtx));
+            this.drawables.static[i].frameId = window.requestAnimationFrame(this.drawables.static[i].render);
         }
 
         for (let seq_type in this.drawables.sequentials) {
             let seqs = this.drawables.sequentials[seq_type]
             for (let i = 0; i < seqs.length; i++) {
-                seqs[i].frameId = window.requestAnimationFrame(seqs[i].fRender(this.mainCtx));
+                seqs[i].frameId = window.requestAnimationFrame(seqs[i].render);
             }
         }
     };

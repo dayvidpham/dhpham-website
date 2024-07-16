@@ -1,5 +1,6 @@
 export interface Drawable {
     frameId: number;
+    render: FrameRequestCallback;
 
     fRender(ctx: CanvasRenderingContext2D): FrameRequestCallback;
     update(timeMs: number): void;
