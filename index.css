@@ -13,10 +13,16 @@
     color: #f0f0f0;
 }
 
-#main-canvas {
+canvas {
     position: fixed;
     display: block;
     top: 0px; left: 0px;
+}
+
+#static-canvas {
+    z-index: -2;
+}
+#main-canvas {
     z-index: -1;
 }
 

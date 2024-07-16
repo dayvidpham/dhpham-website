@@ -15,7 +15,6 @@ export type SunDrawProps = {
 
 export class Sun implements Drawable {
     // Explicit
-    readonly ctx: CanvasRenderingContext2D;
     readonly origin: Point2D;
 
     radius: number;
@@ -24,12 +23,12 @@ export class Sun implements Drawable {
     readonly fillRgbHex: string;
 
     // Implicit or set later
+    render: FrameRequestCallback;
     prevTimeMs: number;
     frameId: number;
 
     constructor(initProps: SunInitProps, drawProps: SunDrawProps) {
         // Explicit
-        this.ctx = initProps.ctx;
         this.origin = initProps.origin;
 
         this.minRadius = drawProps.minRadius;
@@ -41,30 +40,36 @@ export class Sun implements Drawable {
         this.prevTimeMs = -1;
         this.frameId = -1;
         // `this` will be undefined when re-called
+        this.fRender = this.fRender.bind(this);
+        this.render = this.fRender(initProps.ctx).bind(this);
         this.draw = this.draw.bind(this);
-        this.updateAndDraw = this.updateAndDraw.bind(this);
+        this.update = this.update.bind(this);
         this.shutdown = this.shutdown.bind(this);
     }
 
-    updateAndDraw(timeMs: number) {
+    fRender(ctx: CanvasRenderingContext2D) {
+        const render = (timeMs: number) => {
+            this.update(timeMs);
+            this.draw(ctx);
+        }
+        return render;
+    }
+
+    update(timeMs: number): void {
         if (this.prevTimeMs === -1) {
             this.prevTimeMs = timeMs;
         }
 
         const elapsed = timeMs - this.prevTimeMs;
-
-        this.draw(this.fillRgbHex);
         this.prevTimeMs = timeMs;
     }
 
-    draw(
-        fillRgbHex: string
-    ) {
-        this.ctx.beginPath();
+    draw(ctx: CanvasRenderingContext2D): void {
+        ctx.beginPath();
         // FILL
-        this.ctx.fillStyle = fillRgbHex;
-        this.ctx.arc(this.origin.x, this.origin.y, this.radius, 0, 2 * Math.PI);
-        this.ctx.fill();
+        ctx.fillStyle = this.fillRgbHex;
+        ctx.arc(this.origin.x, this.origin.y, this.radius, 0, 2 * Math.PI);
+        ctx.fill();
     }
 
     resize(scale: Point2D) {

@@ -1,8 +1,10 @@
 export interface Drawable {
     frameId: number;
 
-    updateAndDraw(timeMs: number): void;
+    fRender(ctx: CanvasRenderingContext2D): FrameRequestCallback;
+    update(timeMs: number): void;
     resize(scale: Point2D): void;
+    draw(ctx: CanvasRenderingContext2D): void;
     shutdown(): void;
 }
 
