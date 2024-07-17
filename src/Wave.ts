@@ -111,27 +111,37 @@ export class Wave implements Drawable, Sequential {
         this.prevTimeMs = timeMs;
         this.accumTimeMs += elapsedMs;
 
-        let perlin, yPerlinMagnitude, yPerlin,
-            xPerlinMagnitude, xPerlin;
+        let yPerlinSample, yPerlinMagnitude, yPerlinWeight, yPerlin,
+            xPerlinSample, xPerlinMagnitude, xPerlinWeight, xPerlin;
 
         let y = this.start.y;
         let x = this.start.x;
         let t = 0;
+        let perlinStep = this.accumTimeMs * 0.001;
+        let perlinWeight = 0; // TODO: possibly pre-computed
 
         for (let i = 0; i < this.numPoints; i += 1) {
-            perlin = noise(x, y, this.accumTimeMs * 0.001) - 0.5;
-            //console.log(perlin)
-            yPerlinMagnitude = 32 * 4 * (Math.sin(-Math.PI / 4 + this.tlinspace * Math.PI) ** 2);
-            yPerlin = perlin * yPerlinMagnitude;
-            //console.log(this.ys[0]);
+            yPerlinSample = noise(x, y + perlinStep, perlinStep);
+            // console.log(perlin)
+
+            yPerlinWeight = (Math.sin(-Math.PI / 4 + t * 1.25 * Math.PI) ** 4);
+            //yPerlinWeight *= yPerlinWeight;
+            //i == (32) ? console.log(yPerlinWeight) : null;
+            yPerlinMagnitude = 32 * 1 * yPerlinWeight;
+            yPerlin = yPerlinSample * yPerlinMagnitude;
+            // i == 0 ? console.log(yPerlin) : null;
+
             this.ys[i] =
                 y
                 + yPerlin
                 + Math.sin(t * 3 * Math.PI + this.ySin) * this.drawProps.yMagnitude
+                // + Math.sin(t * Math.PI + this.ySin) * this.drawProps.yMagnitude
                 + getRandomBetween(-this.drawProps.yJitter, this.drawProps.yJitter);
 
-            xPerlinMagnitude = 32 * 4 * (Math.sin(-Math.PI / 4 + this.tlinspace * Math.PI) ** 2);
-            xPerlin = perlin * xPerlinMagnitude;
+            xPerlinSample = noise(x + perlinStep, y, perlinStep);
+            xPerlinWeight = yPerlinWeight;
+            xPerlinMagnitude = 32 * 1 * xPerlinWeight;
+            xPerlin = xPerlinSample * xPerlinMagnitude;
             this.xs[i] =
                 x
                 + xPerlin
