@@ -27,7 +27,7 @@ canvas {
 }
 
 body {
-    background-color: #131313;
+    background: none;
     color: #eee;
     font-family: monospace;
     margin: 1.5rem;
