@@ -90,18 +90,10 @@ export class Wave implements Drawable, Sequential {
             y += this.ylinspace;
         }
 
-        // WARN: Must manually bind instance methods to their 
-        // own instance because JavaScript sucks.
-        // Else `this` will be undefined when re-called
-        this.fRender = this.fRender.bind(this);
-        this.render = this.fRender(initProps.ctx).bind(this);
-        this.update = this.update.bind(this);
-        this.draw = this.draw.bind(this);
-        this.resize = this.resize.bind(this);
-        this.shutdown = this.shutdown.bind(this);
+        this.render = this.fRender(initProps.ctx);
     }
 
-    fRender(ctx: CanvasRenderingContext2D) {
+    fRender = (ctx: CanvasRenderingContext2D): FrameRequestCallback => {
         const render = (timeMs: number) => {
             this.update(timeMs);
             this.draw(ctx);
@@ -109,7 +101,7 @@ export class Wave implements Drawable, Sequential {
         return render;
     }
 
-    update(timeMs: number): void {
+    update = (timeMs: number): void => {
         if (this.prevTimeMs === -1) {
             this.prevTimeMs = timeMs;
         }
@@ -151,7 +143,7 @@ export class Wave implements Drawable, Sequential {
         }
     }
 
-    draw(ctx: CanvasRenderingContext2D) {
+    draw = (ctx: CanvasRenderingContext2D): void => {
         ctx.save()
         ctx.beginPath();
         ctx.strokeStyle = this.drawProps.strokeRgbHex;
@@ -177,7 +169,7 @@ export class Wave implements Drawable, Sequential {
         ctx.restore();
     }
 
-    resize(scale: Point2D) {
+    resize = (scale: Point2D): void => {
         this.start.scale(scale);
         this.end.scale(scale);
 
@@ -195,7 +187,7 @@ export class Wave implements Drawable, Sequential {
 
     }
 
-    shutdown() {
+    shutdown = (): void => {
         if (this.frameId === -1) {
             console.error('Calling shutdown() on Wave object but Wave object not in updateAndDraw loop');
             return

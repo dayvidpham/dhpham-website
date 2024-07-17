@@ -34,18 +34,6 @@ class CanvasController {
         fps: number,
         drawables: CanvasControllerDrawables,
     ) {
-        // Bindings
-        this.init = this.init.bind(this);
-        this.initContext = this.initContext.bind(this);
-        this.initStatic = this.initStatic.bind(this);
-        this.initMain = this.initMain.bind(this);
-
-        this.renderLoop = this.renderLoop.bind(this);
-        this.resize = this.resize.bind(this);
-        this.shutdown = this.shutdown.bind(this);
-
-        this.drawBackground = this.drawBackground.bind(this);
-
         // Explicit
         this.fps = fps;
         this.drawables = drawables;
@@ -64,7 +52,7 @@ class CanvasController {
         this.staticCtx = this.initContext('#static-canvas', { alpha: false });
     }
 
-    init(): void {
+    init = (): void => {
         if (this.loopId != -1) {
             console.error('Called loop() in CanvasController instance when already looping. Returning.');
             return
@@ -78,14 +66,14 @@ class CanvasController {
         this.loopId = setInterval(this.renderLoop, this.fpMs);
     }
 
-    private drawBackground(backgroundColor: string) {
+    private drawBackground = (backgroundColor: string): void => {
         this.staticCtx.save();
         this.staticCtx.fillStyle = backgroundColor;
         this.staticCtx.fillRect(0, 0, this.staticCtx.canvas.width, this.staticCtx.canvas.height);
         this.staticCtx.restore();
     }
 
-    private initStatic() {
+    private initStatic = (): void => {
         this.drawBackground(this.backgroundColor);
 
         const sun = new Sun({
@@ -101,7 +89,7 @@ class CanvasController {
         this.drawables.static.push(sun);
     }
 
-    private initMain() {
+    private initMain = (): void => {
         const NUM_WAVES = 10;
         const yOffset = this.mainCtx.canvas.height / (2 * NUM_WAVES);
         const ySinOffset = (Math.PI * 1.3) / NUM_WAVES
@@ -136,10 +124,10 @@ class CanvasController {
         }
     }
 
-    private initContext(
+    private initContext = (
         canvasQuery: string,
         contextOpts?: CanvasRenderingContext2DSettings,
-    ): CanvasRenderingContext2D {
+    ): CanvasRenderingContext2D => {
         const canvas = this.queryCanvas(canvasQuery);
 
         canvas.width = window.innerWidth;
@@ -152,7 +140,7 @@ class CanvasController {
         return context;
     }
 
-    private queryCanvas(query: string): HTMLCanvasElement {
+    private queryCanvas = (query: string): HTMLCanvasElement => {
         const selectorResult: HTMLElement | null = document.querySelector(query);
         if (selectorResult === null
             || !(selectorResult instanceof HTMLCanvasElement)) {
@@ -161,7 +149,7 @@ class CanvasController {
         return selectorResult;
     }
 
-    renderLoop(): void {
+    renderLoop = (): void => {
         this.mainCtx.clearRect(0, 0, this.mainCtx.canvas.width, this.mainCtx.canvas.height);
 
         for (let i = 0; i < this.drawables.static.length; i++) {
@@ -176,7 +164,7 @@ class CanvasController {
         }
     };
 
-    private resize(): void {
+    private resize = (): void => {
         let scaleFactorX = window.innerWidth / this.dims.width;
         let scaleFactorY = window.innerHeight / this.dims.height;
         let scale = new Point2D(scaleFactorX, scaleFactorY);
@@ -203,7 +191,7 @@ class CanvasController {
         }
     }
 
-    shutdown(): void {
+    shutdown = (): void => {
         if (this.loopId === -1) {
             console.error('Called shutdown() in CanvasController instance when not yet looping. Returning.');
             return

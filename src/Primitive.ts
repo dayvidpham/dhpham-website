@@ -22,13 +22,17 @@ export class Point2D {
         this.y = y;
     }
 
-    scale(factor: Point2D): void {
+    scale = (factor: Point2D): void => {
         this.x *= factor.x;
         this.y *= factor.y;
     }
 
-    magnitude(): number {
+    magnitude = (): number => {
         return Math.sqrt(this.x ** 2 + this.y ** 2)
+    }
+
+    isZero = (): boolean => {
+        return this.x == 0 && this.y == 0;
     }
 }
 

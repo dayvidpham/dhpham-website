@@ -39,15 +39,10 @@ export class Sun implements Drawable {
         // Implicit
         this.prevTimeMs = -1;
         this.frameId = -1;
-        // `this` will be undefined when re-called
-        this.fRender = this.fRender.bind(this);
-        this.render = this.fRender(initProps.ctx).bind(this);
-        this.draw = this.draw.bind(this);
-        this.update = this.update.bind(this);
-        this.shutdown = this.shutdown.bind(this);
+        this.render = this.fRender(initProps.ctx);
     }
 
-    fRender(ctx: CanvasRenderingContext2D) {
+    fRender = (ctx: CanvasRenderingContext2D): FrameRequestCallback => {
         const render = (timeMs: number) => {
             this.update(timeMs);
             this.draw(ctx);
@@ -55,7 +50,7 @@ export class Sun implements Drawable {
         return render;
     }
 
-    update(timeMs: number): void {
+    update = (timeMs: number): void => {
         if (this.prevTimeMs === -1) {
             this.prevTimeMs = timeMs;
         }
@@ -64,7 +59,7 @@ export class Sun implements Drawable {
         this.prevTimeMs = timeMs;
     }
 
-    draw(ctx: CanvasRenderingContext2D): void {
+    draw = (ctx: CanvasRenderingContext2D): void => {
         ctx.beginPath();
         // FILL
         ctx.fillStyle = this.fillRgbHex;
@@ -72,12 +67,12 @@ export class Sun implements Drawable {
         ctx.fill();
     }
 
-    resize(scale: Point2D) {
+    resize = (scale: Point2D): void => {
         this.origin.scale(scale);
         this.radius = clamp(this.radius * scale.x, this.minRadius, this.maxRadius);
     }
 
-    shutdown() {
+    shutdown = (): void => {
         if (this.frameId === -1) {
             console.error('Calling shutdown() on Sun object but Sun object not in updateAndDraw loop');
             return
