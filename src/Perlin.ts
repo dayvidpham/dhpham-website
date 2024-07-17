@@ -47,14 +47,6 @@ const initGradients = (NUM_DIMS: number, GRID_LEN: number) => {
 }
 const gradients: Float32Array = initGradients(NUM_DIMS, GRID_LEN);
 
-/* indexGrid(x: number, y: number, z: number) {
-    return [
-        Math.floor(x) & 255,
-        Math.floor(y) & 255,
-        Math.floor(z) & 255,
-    ];
-} */
-
 const fade = (t: number) =>
     // quintic hermitian spline: 1st and 2nd derivs are 0 at ends
     t * t * t * (10 - 15 * t + 6 * t * t)
@@ -148,18 +140,4 @@ export const noise = (x: number, y: number, z: number) => {
     let output = (lerp(y__0, y__1, faded[2]) + 1) / 2;
     return output;
 }
-
-/* static indexGradient(x: number, y: number, z: number) {
-    const xi = Perlin.indexGrid(x),
-        yi = Perlin.indexGrid(y),
-        zi = Perlin.indexGrid(z);
-    const aaa = permutation[permutation[permutation[xi] + yi] + zi],
-        aba = permutation[permutation[permutation[xi] + yi + 1] + zi],
-        aab = permutation[permutation[permutation[xi] + yi] + zi + 1],
-        abb = permutation[permutation[permutation[xi] + yi + 1] + zi + 1],
-        baa = permutation[permutation[permutation[xi + 1] + yi] + zi],
-        bba = permutation[permutation[permutation[xi + 1] + yi + 1] + zi],
-        bab = permutation[permutation[permutation[xi + 1] + yi] + zi + 1],
-        bbb = permutation[permutation[permutation[xi + 1] + yi + 1] + zi + 1]
-} */
 
