@@ -7,8 +7,8 @@ export type WaveInitProps = {
     readonly start: Point2D;
     readonly end: Point2D;
     readonly ySin: number;
-    readonly yPeriod: number;
-    readonly nPoints: number;
+    readonly ySinPeriodMs: number;
+    readonly numPoints: number;
 
     readonly sequenceNumber: number;
 }
@@ -27,9 +27,9 @@ export class Wave implements Drawable, Sequential {
     // Explicit
     start: Point2D;
     end: Point2D;
-    readonly yPeriod: number;
+    readonly ySinPeriodMs: number;
     ySin: number;
-    readonly nPoints: number;
+    readonly numPoints: number;
 
     // Sequential
     readonly sequenceNumber: number;
@@ -42,7 +42,7 @@ export class Wave implements Drawable, Sequential {
     // Implicit or set later
     xlinspace: number;
     ylinspace: number;
-    readonly tStep: number;
+    readonly tlinspace: number;
     prevTimeMs: number;
     accumTimeMs: number;
     frameId: number;
@@ -50,9 +50,9 @@ export class Wave implements Drawable, Sequential {
 
     constructor(initProps: WaveInitProps, drawProps: WaveDrawProps) {
         // Explicit
-        this.yPeriod = initProps.yPeriod;
+        this.ySinPeriodMs = initProps.ySinPeriodMs;
         this.ySin = initProps.ySin;
-        this.nPoints = initProps.nPoints;
+        this.numPoints = initProps.numPoints;
         this.sequenceNumber = initProps.sequenceNumber;
         this.start = initProps.start;
         this.end = initProps.end;
@@ -67,22 +67,22 @@ export class Wave implements Drawable, Sequential {
         };
 
         // Implicit
-        this.tStep = 1 / this.nPoints;
+        this.tlinspace = 1 / this.numPoints;
         this.accumTimeMs = 0;
         this.prevTimeMs = -1;
         this.frameId = -1;
 
         // TODO: Should place in a private init() function
         // NOTE: Init TypedArrays
-        this.xlinspace = (this.end.x - this.start.x) / ((initProps.nPoints - 1) || 1);
-        this.ylinspace = (this.end.y - this.start.y) / ((initProps.nPoints - 1) || 1);
-        this.xs = new Float32Array(this.nPoints);   // optimize calcs
-        this.ys = new Float32Array(this.nPoints);
+        this.xlinspace = (this.end.x - this.start.x) / ((initProps.numPoints - 1) || 1);
+        this.ylinspace = (this.end.y - this.start.y) / ((initProps.numPoints - 1) || 1);
+        this.xs = new Float32Array(this.numPoints);   // optimize calcs
+        this.ys = new Float32Array(this.numPoints);
         let x = this.start.x,
             y = this.start.y,
             t = 0;
 
-        for (let i = 0; i < this.nPoints; i += 1) {
+        for (let i = 0; i < this.numPoints; i += 1) {
             this.xs[i] = x
                 + getRandomBetween(-drawProps.xJitter, drawProps.xJitter);
 
@@ -106,10 +106,10 @@ export class Wave implements Drawable, Sequential {
             this.prevTimeMs = timeMs;
         }
 
-        const elapsed = timeMs - this.prevTimeMs;
-        this.ySin += elapsed * this.yPeriod;
+        const elapsedMs = timeMs - this.prevTimeMs;
+        this.ySin += elapsedMs * this.ySinPeriodMs;
         this.prevTimeMs = timeMs;
-        this.accumTimeMs += elapsed;
+        this.accumTimeMs += elapsedMs;
 
         let perlin, yPerlinMagnitude, yPerlin,
             xPerlinMagnitude, xPerlin;
@@ -118,10 +118,10 @@ export class Wave implements Drawable, Sequential {
         let x = this.start.x;
         let t = 0;
 
-        for (let i = 0; i < this.nPoints; i += 1) {
+        for (let i = 0; i < this.numPoints; i += 1) {
             perlin = noise(x, y, this.accumTimeMs * 0.001) - 0.5;
             //console.log(perlin)
-            yPerlinMagnitude = 32 * 4 * (Math.sin(-Math.PI / 4 + i / this.nPoints * Math.PI) ** 2);
+            yPerlinMagnitude = 32 * 4 * (Math.sin(-Math.PI / 4 + this.tlinspace * Math.PI) ** 2);
             yPerlin = perlin * yPerlinMagnitude;
             //console.log(this.ys[0]);
             this.ys[i] =
@@ -130,7 +130,7 @@ export class Wave implements Drawable, Sequential {
                 + Math.sin(t * 3 * Math.PI + this.ySin) * this.drawProps.yMagnitude
                 + getRandomBetween(-this.drawProps.yJitter, this.drawProps.yJitter);
 
-            xPerlinMagnitude = 32 * 4 * (Math.sin(-Math.PI / 4 + i / this.nPoints * Math.PI) ** 2);
+            xPerlinMagnitude = 32 * 4 * (Math.sin(-Math.PI / 4 + this.tlinspace * Math.PI) ** 2);
             xPerlin = perlin * xPerlinMagnitude;
             this.xs[i] =
                 x
@@ -139,7 +139,7 @@ export class Wave implements Drawable, Sequential {
 
             y += this.ylinspace;
             x += this.xlinspace;
-            t += this.tStep;
+            t += this.tlinspace;
         }
     }
 

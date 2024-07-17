@@ -91,8 +91,12 @@ class CanvasController {
 
     private initMain = (): void => {
         const NUM_WAVES = 10;
+        const WAVE_NUM_ANCHOR_POINTS = 64;
+        const WAVE_Y_SIN_PERIOD_RAD = 2 * Math.PI; // NOTE: 1 period per 3000ms 
+        const WAVE_Y_SIN_PERIOD_MS = WAVE_Y_SIN_PERIOD_RAD / 3000; // NOTE: 1 period per 3000ms 
+        const WAVE_Y_SIN_OFFSET = (Math.PI * 1.3) / NUM_WAVES
+
         const yOffset = this.mainCtx.canvas.height / (2 * NUM_WAVES);
-        const ySinOffset = (Math.PI * 1.3) / NUM_WAVES
 
         const waveDrawProps = {
             yMagnitude: this.mainCtx.canvas.width * 0.1,
@@ -116,9 +120,9 @@ class CanvasController {
                     this.mainCtx.canvas.width + 10,
                     this.mainCtx.canvas.height / 2 + (0.25 * yOffset * NUM_WAVES) + (yOffset * i * 2)
                 ),
-                nPoints: 64,
-                yPeriod: 2 * Math.PI / 3000, // NOTE: 1 period per 3000ms
-                ySin: ySinOffset * i,
+                numPoints: WAVE_NUM_ANCHOR_POINTS,
+                ySinPeriodMs: WAVE_Y_SIN_PERIOD_MS, // NOTE: 1 period per 3000ms
+                ySin: WAVE_Y_SIN_OFFSET * i,
                 sequenceNumber: i,
             }, waveDrawProps));
         }

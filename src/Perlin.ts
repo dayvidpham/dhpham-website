@@ -69,6 +69,7 @@ const dot = (gx: number, gy: number, gz: number, dx: number, dy: number, dz: num
 }
 
 export const noise = (x: number, y: number, z: number) => {
+    // TODO: Optimize, is allocating crazy amt of memory
     const pointP: readonly number[] = [x, y, z];
     const gridP0: readonly number[] = pointP.map(indexGrid);
     const gridP1: readonly number[] = gridP0.map(xin => indexGrid(xin + 1));
