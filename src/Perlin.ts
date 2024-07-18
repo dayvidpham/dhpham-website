@@ -68,22 +68,51 @@ const dot = (gx: number, gy: number, gz: number, dx: number, dy: number, dz: num
     return gx * dx + gy * dy + gz * dz
 }
 
+const pointP = new Float32Array(3);
+const gridP0 = new Float32Array(3);
+const gridP1 = new Float32Array(3);
+
+const cubeP = new Float32Array(3);
+const faded = new Float32Array(3);
+
+const gridPX = new Float32Array(2);
+const gridPY = new Float32Array(2);
+const gridPZ = new Float32Array(2);
+
+let ig: number = 0;
+
+let gridX: number = 0, gridY: number = 0, gridZ: number = 0;
+let gradX: number = 0, gradY: number = 0, gradZ: number = 0;
+
+let dots: Float32Array = new Float32Array(8);
+let i: number = 0, j: number = 0;
+
+let x_00,
+    x_10,
+    y__0,
+
+    x_01,
+    x_11,
+    y__1,
+
+    output;
+
 export const noise = (x: number, y: number, z: number) => {
     // TODO: Optimize, is allocating crazy amt of memory
-    const pointP: readonly number[] = [x, y, z];
-    const gridP0: readonly number[] = pointP.map(indexGrid);
-    const gridP1: readonly number[] = gridP0.map(xin => indexGrid(xin + 1));
+    pointP[0] = x;
+    pointP[1] = y;
+    pointP[2] = z;
 
-    const cubeP: readonly number[] = pointP.map(internalPoint);
-    const faded: readonly number[] = cubeP.map(fade);
+    for (i = 0; i < NUM_DIMS; i++) {
+        gridP0[i] = indexGrid(pointP[i]);
+        gridP1[i] = indexGrid(gridP0[i] + 1);
+        cubeP[i] = internalPoint(pointP[i]);
+        faded[i] = fade(cubeP[i]);
+    }
 
-    const gridPX = [gridP0[0], gridP1[0]];
-    const gridPY = [gridP0[1], gridP1[1]];
-    const gridPZ = [gridP0[2], gridP1[2]];
-    let ig: number = 0;
-    let gridX: number = 0, gridY: number = 0, gridZ: number = 0;
-    let gradX: number = 0, gradY: number = 0, gradZ: number = 0;
-    let dots: Float32Array = new Float32Array(8);
+    gridPX[0] = gridP0[0], gridPX[1] = gridP1[0];
+    gridPY[0] = gridP0[1], gridPY[1] = gridP1[1];
+    gridPZ[0] = gridP0[2], gridPZ[1] = gridP1[2];
 
     // eight corners of a cube
     //
@@ -130,15 +159,15 @@ export const noise = (x: number, y: number, z: number) => {
         }
     }
 
-    let x_00 = lerp(dots[0], dots[1], faded[0]),
+    x_00 = lerp(dots[0], dots[1], faded[0]),
         x_10 = lerp(dots[2], dots[3], faded[0]),
         y__0 = lerp(x_00, x_10, faded[1]);
 
-    let x_01 = lerp(dots[4], dots[5], faded[0]),
+    x_01 = lerp(dots[4], dots[5], faded[0]),
         x_11 = lerp(dots[6], dots[7], faded[0]),
         y__1 = lerp(x_01, x_11, faded[1]);
 
-    let output = (lerp(y__0, y__1, faded[2]) + 1) / 2;
+    output = lerp(y__0, y__1, faded[2]) * 2;
     return output;
 }
 
