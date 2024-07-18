@@ -17,10 +17,10 @@ export type WaveDrawProps = {
     yMagnitude: number,
     minYMagnitude: number,
     maxYMagnitude: number,
-    readonly xJitter: number,
-    readonly yJitter: number,
-    readonly strokeRgbHex: string,
-    readonly lineWidth: number,
+    xJitter: number,
+    yJitter: number,
+    strokeRgbHex: string,
+    lineWidth: number,
 }
 
 export class Wave implements Drawable, Sequential {
