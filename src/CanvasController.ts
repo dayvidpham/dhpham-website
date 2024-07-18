@@ -63,13 +63,6 @@ export class CanvasController {
         this.loopId = setInterval(this.renderLoop, this.fpMs);
     }
 
-    private drawBackground = (backgroundColor: string): void => {
-        this.staticCtx.save();
-        this.staticCtx.fillStyle = backgroundColor;
-        this.staticCtx.fillRect(0, 0, this.staticCtx.canvas.width, this.staticCtx.canvas.height);
-        this.staticCtx.restore();
-    }
-
     private initStatic = (): void => {
         this.drawBackground(this.backgroundColor);
 
@@ -85,6 +78,14 @@ export class CanvasController {
 
         this.drawables.static.push(sun);
     }
+
+    private drawBackground = (backgroundColor: string): void => {
+        this.staticCtx.save();
+        this.staticCtx.fillStyle = backgroundColor;
+        this.staticCtx.fillRect(0, 0, this.staticCtx.canvas.width, this.staticCtx.canvas.height);
+        this.staticCtx.restore();
+    }
+
 
     private initMain = (): void => {
         const NUM_WAVES = 10;
@@ -105,23 +106,28 @@ export class CanvasController {
             lineWidth: 0.75,
         }
 
+        let wave: Wave;
         for (let i = 0; i < NUM_WAVES; i++) {
-            this.drawables.sequentials.waves.push(new Wave({
+            wave = new Wave(
                 // NOTE: WaveInitProps
-                ctx: this.mainCtx,
-                start: new Point2D(
-                    -10,
-                    this.mainCtx.canvas.height / 2 - (yOffset * NUM_WAVES) - (yOffset * i)
-                ),
-                end: new Point2D(
-                    this.mainCtx.canvas.width + 10,
-                    this.mainCtx.canvas.height / 2 + (0.25 * yOffset * NUM_WAVES) + (yOffset * i * 2)
-                ),
-                numPoints: WAVE_NUM_ANCHOR_POINTS,
-                ySinPeriodMs: WAVE_Y_SIN_PERIOD_MS, // NOTE: 1 period per 3000ms
-                ySin: WAVE_Y_SIN_OFFSET * i,
-                sequenceNumber: i,
-            }, waveDrawProps));
+                {
+                    ctx: this.mainCtx,
+                    start: new Point2D(
+                        -10,
+                        this.mainCtx.canvas.height / 2 - (yOffset * NUM_WAVES) - (yOffset * i)
+                    ),
+                    end: new Point2D(
+                        this.mainCtx.canvas.width + 10,
+                        this.mainCtx.canvas.height / 2 + (0.25 * yOffset * NUM_WAVES) + (yOffset * i * 2)
+                    ),
+                    numPoints: WAVE_NUM_ANCHOR_POINTS,
+                    ySinPeriodMs: WAVE_Y_SIN_PERIOD_MS, // NOTE: 1 period per 3000ms
+                    ySin: WAVE_Y_SIN_OFFSET * i,
+                    sequenceNumber: i,
+                },
+                waveDrawProps
+            )
+            this.drawables.sequentials.waves.push(wave);
         }
     }
 
