@@ -42,7 +42,7 @@ export class Wave implements Drawable, Sequential {
     // Implicit or set later
     xlinspace: number;
     ylinspace: number;
-    readonly tlinspace: number;
+    readonly tAnchorLinspace: number;
     prevTimeMs: number;
     accumTimeMs: number;
     frameId: number;
@@ -67,7 +67,7 @@ export class Wave implements Drawable, Sequential {
         };
 
         // Implicit
-        this.tlinspace = 1 / this.numPoints;
+        this.tAnchorLinspace = 1 / this.numPoints;
         this.accumTimeMs = 0;
         this.prevTimeMs = -1;
         this.frameId = -1;
@@ -116,7 +116,7 @@ export class Wave implements Drawable, Sequential {
 
         let y = this.start.y;
         let x = this.start.x;
-        let t = 0;
+        let tAnchor = 0;
         let perlinStep = this.accumTimeMs * 0.001;
         let perlinWeight = 0; // TODO: possibly pre-computed
 
@@ -124,23 +124,23 @@ export class Wave implements Drawable, Sequential {
             yPerlinSample = noise(x, y + perlinStep, perlinStep);
             // console.log(perlin)
 
-            yPerlinWeight = (Math.sin(-Math.PI / 4 + t * 1.25 * Math.PI) ** 4);
+            yPerlinWeight = (Math.sin(-Math.PI / 4 + tAnchor * 1.25 * Math.PI) ** 4);
             //yPerlinWeight *= yPerlinWeight;
             //i == (32) ? console.log(yPerlinWeight) : null;
-            yPerlinMagnitude = 32 * 1 * yPerlinWeight;
+            yPerlinMagnitude = 2 * 16 * yPerlinWeight;
             yPerlin = yPerlinSample * yPerlinMagnitude;
             // i == 0 ? console.log(yPerlin) : null;
 
             this.ys[i] =
                 y
                 + yPerlin
-                + Math.sin(t * 3 * Math.PI + this.ySin) * this.drawProps.yMagnitude
+                + Math.sin(tAnchor * 3 * Math.PI + this.ySin) * this.drawProps.yMagnitude
                 // + Math.sin(t * Math.PI + this.ySin) * this.drawProps.yMagnitude
                 + getRandomBetween(-this.drawProps.yJitter, this.drawProps.yJitter);
 
             xPerlinSample = noise(x + perlinStep, y, perlinStep);
             xPerlinWeight = yPerlinWeight;
-            xPerlinMagnitude = 32 * 1 * xPerlinWeight;
+            xPerlinMagnitude = 1 * 16 * xPerlinWeight;
             xPerlin = xPerlinSample * xPerlinMagnitude;
             this.xs[i] =
                 x
@@ -149,7 +149,7 @@ export class Wave implements Drawable, Sequential {
 
             y += this.ylinspace;
             x += this.xlinspace;
-            t += this.tlinspace;
+            tAnchor += this.tAnchorLinspace;
         }
     }
 
