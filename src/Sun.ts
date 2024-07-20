@@ -10,7 +10,7 @@ export type SunDrawProps = {
     radius: number;
     minRadius: number;
     maxRadius: number;
-    readonly fillRgbHex: string;
+    fillRgbHex: string;
 }
 
 export class Sun implements Drawable {
@@ -68,11 +68,12 @@ export class Sun implements Drawable {
     }
 
     draw = (ctx: CanvasRenderingContext2D): void => {
-        ctx.beginPath();
+        ctx.save();
         // FILL
-        ctx.fillStyle = this.#fillRgbHex;
+        ctx.fillStyle = this.#drawProps.fillRgbHex;
         ctx.arc(this.#origin.x, this.#origin.y, this.#radius, 0, 2 * Math.PI);
         ctx.fill();
+        ctx.restore();
     }
 
     resize = (scale: Point2D): void => {

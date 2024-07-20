@@ -8,7 +8,7 @@ import { tryQueryDocument } from './Utils';
 ////////////////////////////////////////////////////
 
 export type CanvasControllerDrawables = {
-    static: Drawable[],
+    static: Record<string, Drawable[]>,
     sequentials: Record<string, (Sequential & Drawable)[]>,
 };
 
@@ -67,23 +67,79 @@ export class CanvasController {
         this.#loopId = setInterval(this.renderLoop, this.#fpMs);
     }
 
-    #initStatic = (): void => {
+    /**
+     * Should be used for non-costly operations, should not be used in renderLoop
+     */
+    #forDrawables = (
+        applyF: (drawable: Drawable) => void,
+        drawableType: keyof CanvasControllerDrawables | undefined = undefined,
+        drawablesArray: string | undefined = undefined,
+    ): void => {
+        if (drawableType === undefined) {
+            Object.values(this.#drawables).forEach(drawableType =>
+                Object.values(drawableType).forEach(drawablesArray =>
+                    drawablesArray.forEach(
+                        drawable => applyF(drawable)
+                    )
+                )
+            );
+        }
+
+        else if (drawablesArray === undefined) {
+            Object.values(this.#drawables[drawableType]).forEach(drawablesArray =>
+                drawablesArray.forEach(
+                    drawable => applyF(drawable)
+                )
+            );
+        }
+
+        else {
+            this.#drawables[drawableType][drawablesArray].forEach(
+                drawable => applyF(drawable)
+            );
+        }
+    }
+
+    renderLoop = (): void => {
+        this.#mainCtx.clearRect(0, 0, this.#mainCtx.canvas.width, this.#mainCtx.canvas.height);
+
+        for (const drawableType in this.#drawables.sequentials) {
+            let seqs = this.#drawables.sequentials[drawableType]
+            for (let i = 0; i < seqs.length; i++) {
+                seqs[i].frameId = window.requestAnimationFrame(seqs[i].render);
+            }
+        }
+    };
+
+    renderStatic = (): void => {
         this.#drawBackground(this.#backgroundColor);
 
-        const sun = new Sun(
-            {
+        for (const staticType in this.#drawables.static) {
+            const statics = this.#drawables.static[staticType];
+            for (let i = 0; i < statics.length; i++) {
+                statics[i].frameId = window.requestAnimationFrame(statics[i].render);
+            }
+        }
+    }
+
+    #initStatic = (): void => {
+        const sunProps = {
+            model: {
                 ctx: this.#staticCtx,
                 origin: new Point2D(this.#mainCtx.canvas.width / 3, this.#mainCtx.canvas.height / 2),
             },
-            {
+            draw: {
                 radius: this.#mainCtx.canvas.width / 7,
                 minRadius: 100,
                 maxRadius: 200,
                 fillRgbHex: '#b8360f',
             }
-        );
+        };
+        this.#viewModel.set('static.sun', sunProps);
+        const sun = new Sun(sunProps.model, sunProps.draw);
+        this.#drawables.static.sun.push(sun);
 
-        this.#drawables.static.push(sun);
+        this.renderStatic();
     }
 
     #drawBackground = (backgroundColor: string): void => {
@@ -154,21 +210,6 @@ export class CanvasController {
         return context;
     }
 
-    renderLoop = (): void => {
-        this.#mainCtx.clearRect(0, 0, this.#mainCtx.canvas.width, this.#mainCtx.canvas.height);
-
-        for (let i = 0; i < this.#drawables.static.length; i++) {
-            this.#drawables.static[i].frameId = window.requestAnimationFrame(this.#drawables.static[i].render);
-        }
-
-        for (let seq_type in this.#drawables.sequentials) {
-            let seqs = this.#drawables.sequentials[seq_type]
-            for (let i = 0; i < seqs.length; i++) {
-                seqs[i].frameId = window.requestAnimationFrame(seqs[i].render);
-            }
-        }
-    };
-
     #resize = (): void => {
         let scaleFactorX = window.innerWidth / this.#dims.width;
         let scaleFactorY = window.innerHeight / this.#dims.height;
@@ -179,21 +220,12 @@ export class CanvasController {
 
         this.#staticCtx.canvas.width = window.innerWidth;
         this.#staticCtx.canvas.height = window.innerHeight;
-        this.#drawBackground(this.#backgroundColor);
 
         this.#dims.width = window.innerWidth;
         this.#dims.height = window.innerHeight;
 
-        for (let i = 0; i < this.#drawables.static.length; i++) {
-            this.#drawables.static[i].resize(scale);
-        }
-
-        for (let seq_type in this.#drawables.sequentials) {
-            let seqs = this.#drawables.sequentials[seq_type]
-            for (let i = 0; i < seqs.length; i++) {
-                seqs[i].resize(scale)
-            }
-        }
+        this.#forDrawables(drawable => drawable.resize(scale));
+        this.renderStatic();
     }
 
     shutdown = (): void => {
@@ -204,15 +236,7 @@ export class CanvasController {
         clearInterval(this.#loopId);
         this.#loopId = -1;
 
-        for (let i = 0; i < this.#drawables.static.length; i++) {
-            this.#drawables.static[i].shutdown();
-        }
 
-        for (let seq_type in this.#drawables.sequentials) {
-            let seqs = this.#drawables.sequentials[seq_type]
-            for (let i = 0; i < seqs.length; i++) {
-                seqs[i].shutdown();
-            }
-        }
+        this.#forDrawables(drawable => drawable.shutdown());
     }
 }
