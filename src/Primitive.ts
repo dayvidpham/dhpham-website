@@ -36,3 +36,5 @@ export class Point2D {
     }
 }
 
+export type ViewModel = Map<string, Array<any>>;
+

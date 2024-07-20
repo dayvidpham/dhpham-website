@@ -44,3 +44,15 @@ export function rand3DNormed(): number[] {
     ]
 }
 
+export const tryQueryDocument = <T extends HTMLElement>(
+    query: string,
+    constructor: new () => T,
+): T => {
+    const selectorResult: T | null = document.querySelector(query);
+    if (selectorResult === null
+        || !(selectorResult instanceof constructor)) {
+        throw new ReferenceError(`Could not find ${query} element: something is horribly wrong. Exiting ...`);
+    }
+    return selectorResult as T;
+};
+

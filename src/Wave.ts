@@ -24,73 +24,73 @@ export type WaveDrawProps = {
 }
 
 export class Wave implements Drawable, Sequential {
-    // Explicit
-    start: Point2D;
-    end: Point2D;
-    readonly ySinPeriodMs: number;
-    ySin: number;
-    readonly numPoints: number;
-
+    // Drawable
+    frameId: number;
+    render: FrameRequestCallback;
     // Sequential
     readonly sequenceNumber: number;
 
-    // Draw fn
-    drawProps: WaveDrawProps;
-    xs: Float32Array;
-    ys: Float32Array;
+    // Explicit
+    #start: Point2D;
+    #end: Point2D;
+    readonly #ySinPeriodMs: number;
+    #ySin: number;
+    readonly #numPoints: number;
 
     // Implicit or set later
-    xlinspace: number;
-    ylinspace: number;
-    readonly tAnchorLinspace: number;
-    prevTimeMs: number;
-    accumTimeMs: number;
-    frameId: number;
-    render: FrameRequestCallback;
+    #xlinspace: number;
+    #ylinspace: number;
+    readonly #tAnchorLinspace: number;
+    #prevTimeMs: number;
+    #accumTimeMs: number;
+
+    // Draw fn
+    #drawProps: WaveDrawProps;
+    #xs: Float32Array;
+    #ys: Float32Array;
 
     constructor(initProps: WaveInitProps, drawProps: WaveDrawProps) {
-        // Explicit
-        this.ySinPeriodMs = initProps.ySinPeriodMs;
-        this.ySin = initProps.ySin;
-        this.numPoints = initProps.numPoints;
+        // Drawable
+        this.frameId = -1;
+        this.render = this.fRender(initProps.ctx);
+        // Sequential
         this.sequenceNumber = initProps.sequenceNumber;
-        this.start = initProps.start;
-        this.end = initProps.end;
 
-        this.drawProps = {
-            ...drawProps, // NOTE: copy, else all Waves will share same instance
-            yMagnitude: clamp(
-                drawProps.yMagnitude,
-                drawProps.minYMagnitude,
-                drawProps.maxYMagnitude
-            ),
-        };
+        // Explicit
+        this.#ySinPeriodMs = initProps.ySinPeriodMs;
+        this.#ySin = initProps.ySin;
+        this.#numPoints = initProps.numPoints;
+        this.#start = initProps.start;
+        this.#end = initProps.end;
+
+        this.#drawProps = drawProps;
+        this.#drawProps.yMagnitude = clamp(
+            drawProps.yMagnitude,
+            drawProps.minYMagnitude,
+            drawProps.maxYMagnitude
+        );
 
         // Implicit
-        this.tAnchorLinspace = 1 / this.numPoints;
-        this.accumTimeMs = 0;
-        this.prevTimeMs = -1;
-        this.frameId = -1;
+        this.#tAnchorLinspace = 1 / this.#numPoints;
+        this.#accumTimeMs = 0;
+        this.#prevTimeMs = -1;
 
         // TODO: Should place in a private init() function
         // NOTE: Init TypedArrays
-        this.xlinspace = (this.end.x - this.start.x) / ((initProps.numPoints - 1) || 1);
-        this.ylinspace = (this.end.y - this.start.y) / ((initProps.numPoints - 1) || 1);
-        this.xs = new Float32Array(this.numPoints);   // optimize calcs
-        this.ys = new Float32Array(this.numPoints);
-        let x = this.start.x,
-            y = this.start.y,
+        this.#xlinspace = (this.#end.x - this.#start.x) / ((initProps.numPoints - 1) || 1);
+        this.#ylinspace = (this.#end.y - this.#start.y) / ((initProps.numPoints - 1) || 1);
+        this.#xs = new Float32Array(this.#numPoints);   // optimize calcs
+        this.#ys = new Float32Array(this.#numPoints);
+        let x = this.#start.x,
+            y = this.#start.y,
             t = 0;
 
-        for (let i = 0; i < this.numPoints; i += 1) {
-            this.xs[i] = x
-                + getRandomBetween(-drawProps.xJitter, drawProps.xJitter);
+        for (let i = 0; i < this.#numPoints; i += 1) {
+            this.#xs[i] = x;
 
-            x += this.xlinspace;
-            y += this.ylinspace;
+            x += this.#xlinspace;
+            y += this.#ylinspace;
         }
-
-        this.render = this.fRender(initProps.ctx);
     }
 
     fRender = (ctx: CanvasRenderingContext2D): FrameRequestCallback => {
@@ -102,25 +102,25 @@ export class Wave implements Drawable, Sequential {
     }
 
     update = (timeMs: number): void => {
-        if (this.prevTimeMs === -1) {
-            this.prevTimeMs = timeMs;
+        if (this.#prevTimeMs === -1) {
+            this.#prevTimeMs = timeMs;
         }
 
-        const elapsedMs = timeMs - this.prevTimeMs;
-        this.ySin += elapsedMs * this.ySinPeriodMs;
-        this.prevTimeMs = timeMs;
-        this.accumTimeMs += elapsedMs;
+        const elapsedMs = timeMs - this.#prevTimeMs;
+        this.#ySin += elapsedMs * this.#ySinPeriodMs;
+        this.#prevTimeMs = timeMs;
+        this.#accumTimeMs += elapsedMs;
 
         let yPerlinSample, yPerlinMagnitude, yPerlinWeight, yPerlin,
             xPerlinSample, xPerlinMagnitude, xPerlinWeight, xPerlin;
 
-        let y = this.start.y;
-        let x = this.start.x;
+        let y = this.#start.y;
+        let x = this.#start.x;
         let tAnchor = 0;
-        let perlinStep = this.accumTimeMs * 0.001;
+        let perlinStep = this.#accumTimeMs * 0.001;
         let perlinWeight = 0; // TODO: possibly pre-computed
 
-        for (let i = 0; i < this.numPoints; i += 1) {
+        for (let i = 0; i < this.#numPoints; i += 1) {
             yPerlinSample = noise(x, y + perlinStep, perlinStep);
             // console.log(perlin)
 
@@ -131,40 +131,40 @@ export class Wave implements Drawable, Sequential {
             yPerlin = yPerlinSample * yPerlinMagnitude;
             // i == 0 ? console.log(yPerlin) : null;
 
-            this.ys[i] =
+            this.#ys[i] =
                 y
                 + yPerlin
-                + Math.sin(tAnchor * 3 * Math.PI + this.ySin) * this.drawProps.yMagnitude
+                + Math.sin(tAnchor * 3 * Math.PI + this.#ySin) * this.#drawProps.yMagnitude
                 // + Math.sin(t * Math.PI + this.ySin) * this.drawProps.yMagnitude
-                + getRandomBetween(-this.drawProps.yJitter, this.drawProps.yJitter);
+                + getRandomBetween(-this.#drawProps.yJitter, this.#drawProps.yJitter);
 
             xPerlinSample = noise(x + perlinStep, y, perlinStep);
             xPerlinWeight = yPerlinWeight;
             xPerlinMagnitude = 1 * 16 * xPerlinWeight;
             xPerlin = xPerlinSample * xPerlinMagnitude;
-            this.xs[i] =
+            this.#xs[i] =
                 x
                 + xPerlin
-                + getRandomBetween(-this.drawProps.xJitter, this.drawProps.xJitter);
+                + getRandomBetween(-this.#drawProps.xJitter, this.#drawProps.xJitter);
 
-            y += this.ylinspace;
-            x += this.xlinspace;
-            tAnchor += this.tAnchorLinspace;
+            y += this.#ylinspace;
+            x += this.#xlinspace;
+            tAnchor += this.#tAnchorLinspace;
         }
     }
 
     draw = (ctx: CanvasRenderingContext2D): void => {
         ctx.save()
         ctx.beginPath();
-        ctx.strokeStyle = this.drawProps.strokeRgbHex;
-        ctx.lineWidth = this.drawProps.lineWidth;
+        ctx.strokeStyle = this.#drawProps.strokeRgbHex;
+        ctx.lineWidth = this.#drawProps.lineWidth;
 
-        this.ys.forEach((y, i) => {
+        this.#ys.forEach((y, i) => {
             /////////////////////
             // STROKE
             //ctx.strokeStyle = "black";
             ctx.lineTo(
-                this.xs[i],
+                this.#xs[i],
                 y
             )
 
@@ -180,19 +180,19 @@ export class Wave implements Drawable, Sequential {
     }
 
     resize = (scale: Point2D): void => {
-        this.start.scale(scale);
-        this.end.scale(scale);
+        this.#start.scale(scale);
+        this.#end.scale(scale);
 
         // this.xlinspace = (this.end.x - this.start.x) / this.nPoints;
         // this.ylinspace = (this.end.y - this.start.y) / this.nPoints;
-        this.xlinspace *= scale.x;
-        this.ylinspace *= scale.y;
+        this.#xlinspace *= scale.x;
+        this.#ylinspace *= scale.y;
 
-        this.xs.forEach((_, i) => {
-            this.xs[i] *= scale.x
+        this.#xs.forEach((_, i) => {
+            this.#xs[i] *= scale.x
             //this.ys[i] *= scale.y;
         });
-        this.drawProps.yMagnitude = clamp(this.drawProps.yMagnitude * scale.x, this.drawProps.minYMagnitude, this.drawProps.maxYMagnitude);
+        this.#drawProps.yMagnitude = clamp(this.#drawProps.yMagnitude * scale.x, this.#drawProps.minYMagnitude, this.#drawProps.maxYMagnitude);
         //console.log(`scale.x: ${scale.x}, scale.y: ${scale.y}, yMagnitude: ${this.drawProps.yMagnitude}`)
 
     }
