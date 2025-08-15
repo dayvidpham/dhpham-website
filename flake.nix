@@ -8,10 +8,10 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        nodePkgs = pkgs.nodejs_20.pkgs;
+        nodePkgs = pkgs.nodejs_22.pkgs;
 
         buildInputs = [
-          pkgs.nodejs_20
+          pkgs.nodejs_22
         ];
       in
       {
@@ -26,7 +26,7 @@
 
         packages.default = pkgs.buildNpmPackage {
           pname = "dhpham-website";
-          version = "0.0.1";
+          version = "0.1.0";
           src = ./.;
           npmDepsHash = "sha256-T/sR+XTIF+R0UAfFqsmoy//dvrv2KOV7HR1fiQ327k8=";
 
