@@ -8,10 +8,14 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        nodePkgs = pkgs.nodejs_22.pkgs;
+        nodePkg = pkgs.nodejs_26;
+        nodePkgs = pkgs.nodePkg.pkgs;
 
         buildInputs = [
-          pkgs.nodejs_22
+          nodePkg
+          (pkgs.pnpm.overrideAttrs {
+            nodejs = nodePkg;
+          })
         ];
       in
       {
@@ -24,14 +28,15 @@
           '';
         };
 
-        packages.default = pkgs.buildNpmPackage {
-          pname = "dhpham-website";
-          version = "0.1.0";
-          src = ./.;
-          npmDepsHash = "sha256-T/sR+XTIF+R0UAfFqsmoy//dvrv2KOV7HR1fiQ327k8=";
+        packages.default = pkgs.buildNpmPackage
+          {
+            pname = "dhpham-website";
+            version = "0.2.0";
+            src = ./.;
+            npmDepsHash = "sha256-T/sR+XTIF+R0UAfFqsmoy//dvrv2KOV7HR1fiQ327k8=";
 
-          inherit buildInputs;
-          npmPackFlags = [ "--ignore-scripts" ];
-        };
+            inherit buildInputs;
+            npmPackFlags = [ "--ignore-scripts" ];
+          };
       });
 }

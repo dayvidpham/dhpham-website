@@ -9,16 +9,22 @@
     "start": "tsc --watch& vite"
   },
   "engines": {
-    "node": ">=18.x",
-    "npm": ">=10.x"
+    "node": ">=26.x",
+    "npm": ">=11.x",
+    "pnpm": ">=11.x",
+    "runtime": {
+      "name": "node",
+      "version": "^26.2.0",
+      "onFail": "download"
+    }
   },
   "keywords": [],
   "author": "dayvidpham@gmail.com",
   "license": "ISC",
   "devDependencies": {
     "@types/three": "^0.179.0",
-    "typescript": "^5.3.3",
-    "vite": "^7.1.2"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.3"
   },
   "dependencies": {
     "three": "^0.179.1"
