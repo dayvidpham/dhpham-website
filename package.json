@@ -16,6 +16,7 @@
   "author": "dayvidpham@gmail.com",
   "license": "ISC",
   "devDependencies": {
+    "@types/three": "^0.179.0",
     "typescript": "^5.3.3",
     "vite": "^7.1.2"
   },
