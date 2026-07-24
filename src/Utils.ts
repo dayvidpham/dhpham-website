@@ -1,5 +1,3 @@
-import { Point2D } from "./Primitive";
-
 export function lerp(x0: number, x1: number, t: number): number {
     return x0 + (x1 - x0) * t
 }
@@ -15,16 +13,6 @@ export function getRandomBetween(x0: Readonly<number>, x1: Readonly<number>): nu
 
 export function clamp(x: number, min: number, max: number): number {
     return Math.max(min, Math.min(x, max));
-}
-
-export function rand2DNormed(): Point2D {
-    // Returns a random normalized vector on the unit circle
-    const theta = Math.random() * Math.PI;
-    const x = Math.cos(theta) ** 2;
-    return new Point2D(
-        x,
-        1 - x, // sin2(x) = 1 - cos2(x)
-    )
 }
 
 const HALF_PI = Math.PI / 2;

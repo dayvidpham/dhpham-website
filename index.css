@@ -19,9 +19,6 @@ canvas {
     top: 0px; left: 0px;
 }
 
-#static-canvas {
-    z-index: -2;
-}
 #main-canvas {
     z-index: -1;
 }
