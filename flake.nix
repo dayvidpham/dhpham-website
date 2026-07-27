@@ -9,7 +9,7 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         nodePkg = pkgs.nodejs_24;
-        pnpmPkg = pkgs.pnpm.overrideAttrs {
+        pnpmPkg = pkgs.pnpm_10.overrideAttrs {
           nodejs = nodePkg;
         };
 
@@ -38,7 +38,7 @@
               inherit (finalAttrs) pname version src;
               pnpm = pnpmPkg;
               fetcherVersion = 3;
-              hash = "sha256-VxAFJsqr/2qHScPiLLXl6Kp0njV21m91z2WjmisScoA=";
+              hash = "sha256-YXW30Z67mI7XUJ+ZfeRoChPwWgv0NbDYX62xUbTdG2I=";
             };
 
             nativeBuildInputs = [

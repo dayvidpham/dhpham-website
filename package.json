@@ -1,6 +1,7 @@
 {
   "name": "dhpham-website",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.33.4",
   "description": "",
   "scripts": {
     "test": "vitest run",
