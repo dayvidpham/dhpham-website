@@ -5,7 +5,7 @@ import { Wave } from './Wave';
 const canvas = document.getElementById('main-canvas') as HTMLCanvasElement;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
