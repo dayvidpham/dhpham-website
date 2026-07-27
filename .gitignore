@@ -1,5 +1,6 @@
 # Node.js
 **/node_modules/
+/package-lock.json
 
 # TypeScript
 **/*.d.ts
@@ -11,6 +12,8 @@
 # Build artifacts
 dist/
 out/
+playwright-report/
+test-results/
 # nix build
 result
 

@@ -1,4 +1,4 @@
-import { rand2DNormed, lerp, rand3DNormed, clamp } from "./Utils";
+import { lerp, rand3DNormed, clamp } from "./Utils";
 
 const GRID_LEN: number = 256;
 const NUM_DIMS: number = 3;
