@@ -23,16 +23,20 @@ export class Wave {
 
     private start: THREE.Vector2;
     private end: THREE.Vector2;
+    private readonly baseStart: THREE.Vector2;
+    private readonly baseEnd: THREE.Vector2;
     private readonly numPoints: number;
     private readonly ySinPeriodMs: number;
     private ySin: number;
     private yMagnitude: number;
+    private readonly baseYMagnitude: number;
     private readonly minYMagnitude: number;
     private readonly maxYMagnitude: number;
     private readonly xJitter: number;
     private readonly yJitter: number;
 
     private readonly anchorXs: Float32Array;
+    private readonly baseAnchorXs: Float32Array;
     private readonly positions: Float32Array;
     private readonly positionAttr: THREE.BufferAttribute;
     private xlinspace: number;
@@ -43,12 +47,15 @@ export class Wave {
     constructor(opts: WaveOptions) {
         this.start = opts.start.clone();
         this.end = opts.end.clone();
+        this.baseStart = this.start.clone();
+        this.baseEnd = this.end.clone();
         this.numPoints = opts.numPoints;
         this.ySinPeriodMs = opts.ySinPeriodMs;
         this.ySin = opts.ySin;
         this.minYMagnitude = opts.minYMagnitude;
         this.maxYMagnitude = opts.maxYMagnitude;
         this.yMagnitude = clamp(opts.yMagnitude, this.minYMagnitude, this.maxYMagnitude);
+        this.baseYMagnitude = this.yMagnitude;
         this.xJitter = opts.xJitter;
         this.yJitter = opts.yJitter;
 
@@ -63,6 +70,7 @@ export class Wave {
             this.anchorXs[i] = x + getRandomBetween(-this.xJitter, this.xJitter);
             x += this.xlinspace;
         }
+        this.baseAnchorXs = this.anchorXs.slice();
 
         this.positions = new Float32Array(this.numPoints * 3);
         this.positionAttr = new THREE.BufferAttribute(this.positions, 3);
@@ -120,14 +128,14 @@ export class Wave {
     }
 
     resize = (scale: THREE.Vector2): void => {
-        this.start.multiply(scale);
-        this.end.multiply(scale);
-        this.xlinspace *= scale.x;
-        this.ylinspace *= scale.y;
+        this.start.copy(this.baseStart).multiply(scale);
+        this.end.copy(this.baseEnd).multiply(scale);
+        this.xlinspace = (this.end.x - this.start.x) / ((this.numPoints - 1) || 1);
+        this.ylinspace = (this.end.y - this.start.y) / ((this.numPoints - 1) || 1);
         for (let i = 0; i < this.numPoints; i++) {
-            this.anchorXs[i] *= scale.x;
+            this.anchorXs[i] = this.baseAnchorXs[i] * scale.x;
         }
-        this.yMagnitude = clamp(this.yMagnitude * scale.x, this.minYMagnitude, this.maxYMagnitude);
+        this.yMagnitude = clamp(this.baseYMagnitude * scale.x, this.minYMagnitude, this.maxYMagnitude);
     }
 
     dispose = (): void => {

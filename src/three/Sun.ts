@@ -17,12 +17,14 @@ export class Sun {
     private readonly minRadius: number;
     private readonly maxRadius: number;
     private readonly baseRadius: number;
+    private readonly baseOrigin: THREE.Vector2;
 
     constructor(opts: SunOptions) {
         this.minRadius = opts.minRadius;
         this.maxRadius = opts.maxRadius;
         this.radius = clamp(opts.radius, this.minRadius, this.maxRadius);
         this.baseRadius = this.radius;
+        this.baseOrigin = opts.origin.clone();
 
         const geometry = new THREE.CircleGeometry(this.baseRadius, opts.segments ?? 96);
         const material = new THREE.MeshBasicMaterial({
@@ -35,9 +37,12 @@ export class Sun {
     }
 
     resize = (scale: THREE.Vector2): void => {
-        this.mesh.position.x *= scale.x;
-        this.mesh.position.y *= scale.y;
-        this.radius = clamp(this.radius * scale.x, this.minRadius, this.maxRadius);
+        this.mesh.position.set(
+            this.baseOrigin.x * scale.x,
+            this.baseOrigin.y * scale.y,
+            0,
+        );
+        this.radius = clamp(this.baseRadius * scale.x, this.minRadius, this.maxRadius);
         this.mesh.scale.setScalar(this.radius / this.baseRadius);
     }
 

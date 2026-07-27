@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:all": "pnpm test && pnpm run test:e2e",
+    "test:e2e": "PLAYWRIGHT_PORT=$((30000 + $$ % 10000)) playwright test",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "tsc --watch& vite"
@@ -22,9 +24,11 @@
   "author": "dayvidpham@gmail.com",
   "license": "ISC",
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/three": "^0.184.1",
     "typescript": "^6.0.3",
-    "vite": "^8.0.13"
+    "vite": "^8.0.13",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "three": "^0.184.0"

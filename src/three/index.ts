@@ -60,11 +60,11 @@ for (let i = 0; i < NUM_WAVES; i++) {
     scene.add(wave.line);
 }
 
-let prevDims = new THREE.Vector2(window.innerWidth, window.innerHeight);
+const initialDims = new THREE.Vector2(window.innerWidth, window.innerHeight);
 window.addEventListener('resize', () => {
     const w = window.innerWidth;
     const h = window.innerHeight;
-    const scale = new THREE.Vector2(w / prevDims.x, h / prevDims.y);
+    const scale = new THREE.Vector2(w / initialDims.x, h / initialDims.y);
 
     camera.right = w;
     camera.bottom = h;
@@ -73,8 +73,6 @@ window.addEventListener('resize', () => {
 
     sun.resize(scale);
     waves.forEach((wave) => wave.resize(scale));
-
-    prevDims.set(w, h);
 });
 
 let prevTimeMs = -1;

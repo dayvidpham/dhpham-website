@@ -9,34 +9,56 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         nodePkg = pkgs.nodejs_26;
-        nodePkgs = pkgs.nodePkg.pkgs;
+        pnpmPkg = pkgs.pnpm.overrideAttrs {
+          nodejs = nodePkg;
+        };
 
         buildInputs = [
           nodePkg
-          (pkgs.pnpm.overrideAttrs {
-            nodejs = nodePkg;
-          })
+          pnpmPkg
         ];
       in
       {
         devShells.default = pkgs.mkShell {
-          inherit buildInputs;
+          buildInputs = buildInputs ++ [ pkgs.chromium ];
           shellHook = ''
             echo "node `node --version`"
             echo "npm `npm --version`"
+            export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="${pkgs.chromium}/bin/chromium"
             export PATH="$(pwd)/node_modules/.bin:$PATH"
           '';
         };
 
-        packages.default = pkgs.buildNpmPackage
-          {
+        packages.default = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
             pname = "dhpham-website";
             version = "0.2.0";
             src = ./.;
-            npmDepsHash = "sha256-T/sR+XTIF+R0UAfFqsmoy//dvrv2KOV7HR1fiQ327k8=";
 
-            inherit buildInputs;
-            npmPackFlags = [ "--ignore-scripts" ];
-          };
+            pnpmDeps = pkgs.fetchPnpmDeps {
+              inherit (finalAttrs) pname version src;
+              pnpm = pnpmPkg;
+              fetcherVersion = 3;
+              hash = "sha256-VxAFJsqr/2qHScPiLLXl6Kp0njV21m91z2WjmisScoA=";
+            };
+
+            nativeBuildInputs = [
+              nodePkg
+              pnpmPkg
+              pkgs.pnpmConfigHook
+            ];
+
+            buildPhase = ''
+              runHook preBuild
+              pnpm build
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out
+              cp -r dist/. $out/
+              runHook postInstall
+            '';
+          });
       });
 }
