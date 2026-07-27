@@ -11,14 +11,9 @@
     "start": "tsc --watch& vite"
   },
   "engines": {
-    "node": ">=26.x",
-    "npm": ">=11.x",
-    "pnpm": ">=11.x",
-    "runtime": {
-      "name": "node",
-      "version": "^26.2.0",
-      "onFail": "download"
-    }
+    "node": "24.x",
+    "npm": ">=10.x",
+    "pnpm": ">=10.x"
   },
   "keywords": [],
   "author": "dayvidpham@gmail.com",

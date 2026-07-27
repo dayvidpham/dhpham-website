@@ -8,7 +8,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        nodePkg = pkgs.nodejs_26;
+        nodePkg = pkgs.nodejs_24;
         pnpmPkg = pkgs.pnpm.overrideAttrs {
           nodejs = nodePkg;
         };
