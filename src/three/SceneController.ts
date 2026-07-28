@@ -78,6 +78,7 @@ export class SceneController {
     private readonly getDevicePixelRatio: () => number;
     private readonly resizeTarget: ResizeListenerTarget;
     private readonly animationScheduler: AnimationScheduler;
+    private viewport: Viewport;
     private previousFrameMs: number | undefined;
     private animationFrameRequest: number | undefined;
     private listeningForResize = false;
@@ -91,6 +92,7 @@ export class SceneController {
         this.animationScheduler = opts.animationScheduler ?? getBrowserAnimationScheduler();
         this.baseViewport = this.getViewport();
         this.assertViewport(this.baseViewport);
+        this.viewport = this.baseViewport;
 
         this.renderer = opts.renderer ?? new THREE.WebGLRenderer({
             canvas: opts.canvas,
@@ -179,6 +181,7 @@ export class SceneController {
             label: 'blog',
             worldPosition: this.rings.navigationPosition,
             hitSize: this.rings.navigationHitSize,
+            viewport: this.viewport,
         });
         this.resize(this.baseViewport);
         this.renderFrame(0);
@@ -197,6 +200,7 @@ export class SceneController {
     resize = (viewport: Viewport): void => {
         if (this.disposed) return;
         this.assertViewport(viewport);
+        this.viewport = viewport;
         const scale = new THREE.Vector2(
             viewport.width / this.baseViewport.width,
             viewport.height / this.baseViewport.height,
@@ -215,6 +219,7 @@ export class SceneController {
         this.navigationAnchor.sync(
             this.rings.navigationPosition,
             this.rings.navigationHitSize,
+            this.viewport,
         );
     }
 
@@ -269,6 +274,7 @@ export class SceneController {
         this.navigationAnchor.sync(
             this.rings.navigationPosition,
             this.rings.navigationHitSize,
+            this.viewport,
         );
         this.renderer.render(this.scene, this.camera);
     }
