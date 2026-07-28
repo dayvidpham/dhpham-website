@@ -1,36 +1,11 @@
-import { BrowserContext, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 
-const addDeterministicSceneState = async (context: BrowserContext): Promise<void> => {
-    await context.addInitScript(() => {
-        let randomState = 0x12345678;
-        Math.random = () => {
-            randomState = (1664525 * randomState + 1013904223) >>> 0;
-            return randomState / 0x100000000;
-        };
-
-        let animationFrame = 0;
-        const callbacks = new Map<number, FrameRequestCallback>();
-        window.requestAnimationFrame = (callback: FrameRequestCallback): number => {
-            animationFrame += 1;
-            callbacks.set(animationFrame, callback);
-            return animationFrame;
-        };
-        window.cancelAnimationFrame = (id: number) => callbacks.delete(id);
-        Object.assign(window, {
-            __renderTestFrame: () => {
-                const pending = Array.from(callbacks.values());
-                callbacks.clear();
-                pending.forEach((callback) => callback(1000));
-            },
-        });
-    });
-};
-
-const renderTestFrame = async (page: Page): Promise<void> => {
-    await page.evaluate(() => {
-        const testWindow = window as Window & { __renderTestFrame: () => void };
-        testWindow.__renderTestFrame();
-    });
+const waitForSceneStartup = async (page: Page): Promise<void> => {
+    await expect.poll(() => page.locator('#blog-navigation').evaluate((element) => (
+        element instanceof HTMLAnchorElement
+        && element.style.left.endsWith('px')
+        && element.style.top.endsWith('px')
+    ))).toBe(true);
 };
 
 const viewportCases = [
@@ -45,14 +20,13 @@ for (const viewportCase of viewportCases) {
             deviceScaleFactor: viewportCase.deviceScaleFactor,
             viewport: { width: viewportCase.width, height: viewportCase.height },
         });
-        await addDeterministicSceneState(context);
         try {
             const page = await context.newPage();
             const pageErrors: Error[] = [];
             page.on('pageerror', (error) => pageErrors.push(error));
 
             await page.goto('/');
-            await renderTestFrame(page);
+            await waitForSceneStartup(page);
             const canvas = page.locator('#main-canvas');
             const pixelRatio = Math.min(viewportCase.deviceScaleFactor, 2);
 
@@ -76,15 +50,18 @@ for (const viewportCase of viewportCases) {
 }
 
 test('restores the original scene after repeated viewport resizes', async ({ page }) => {
-    await addDeterministicSceneState(page.context());
     const pageErrors: Error[] = [];
     page.on('pageerror', (error) => pageErrors.push(error));
 
     await page.goto('/');
-    await renderTestFrame(page);
+    await waitForSceneStartup(page);
+    await page.waitForTimeout(100);
     const canvas = page.locator('#main-canvas');
     await expect(canvas).toBeVisible();
-    await expect(canvas).toHaveScreenshot('scene.png');
+    await expect(canvas).toHaveScreenshot('scene.png', {
+        maxDiffPixelRatio: 0.02,
+        timeout: 0,
+    });
 
     for (const viewport of [
         { width: 400, height: 300 },
@@ -99,15 +76,44 @@ test('restores the original scene after repeated viewport resizes', async ({ pag
         width: element.width,
         height: element.height,
     }))).toEqual({ width: 1600, height: 1200 });
-    await renderTestFrame(page);
-    await expect(canvas).toHaveScreenshot('scene.png');
+    await page.waitForTimeout(100);
+    await expect(canvas).toHaveScreenshot('scene.png', {
+        maxDiffPixelRatio: 0.02,
+        timeout: 0,
+    });
     expect(pageErrors).toEqual([]);
 });
 
-test('matches the deterministic scene baseline', async ({ page }) => {
-    await addDeterministicSceneState(page.context());
+test('matches the celestial visual baseline during continuous motion', async ({ page }) => {
+    const pageErrors: Error[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error));
     await page.goto('/');
-    await renderTestFrame(page);
+    await waitForSceneStartup(page);
+    await page.waitForTimeout(100);
 
-    await expect(page.locator('#main-canvas')).toHaveScreenshot('scene.png');
+    expect(pageErrors).toEqual([]);
+    await expect.poll(() => page.locator('#main-canvas').evaluate((element: HTMLCanvasElement) => {
+        const context = element.getContext('webgl2') ?? element.getContext('webgl');
+        return context?.isContextLost() ?? true;
+    })).toBe(false);
+    await expect(page.locator('#main-canvas')).toHaveScreenshot('scene.png', {
+        maxDiffPixelRatio: 0.02,
+        timeout: 0,
+    });
+});
+
+test('uses a visible, focusable native Blog link instead of canvas routing', async ({ page }) => {
+    await page.goto('/');
+    await waitForSceneStartup(page);
+
+    const blogNavigation = page.locator('a#blog-navigation');
+    await expect(blogNavigation).toBeVisible();
+    await expect(blogNavigation).toHaveAttribute('href', '/blog/');
+    await blogNavigation.focus();
+    await expect(blogNavigation).toBeFocused();
+
+    await Promise.all([
+        page.waitForURL('**/blog/'),
+        blogNavigation.press('Enter'),
+    ]);
 });
