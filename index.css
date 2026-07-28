@@ -20,7 +20,14 @@ canvas {
 }
 
 #main-canvas {
-    z-index: -1;
+    pointer-events: none;
+    z-index: 0;
+}
+
+header,
+main {
+    position: relative;
+    z-index: 1;
 }
 
 body {
@@ -40,9 +47,35 @@ a:visited {
     color: #727272;
 }
 
+#blog-navigation {
+    align-items: center;
+    background: rgb(19 19 19 / 74%);
+    border: 1px solid #a0a0cc;
+    box-shadow: 0 0 0.8rem rgb(160 160 204 / 35%);
+    box-sizing: border-box;
+    color: #eee;
+    display: inline-flex;
+    font-family: "MuseoModerno", monospace;
+    font-size: 0.75rem;
+    justify-content: center;
+    letter-spacing: 0.16em;
+    position: absolute;
+    text-decoration: none;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+#blog-navigation:hover,
+#blog-navigation:focus-visible {
+    background: #b8360f;
+    border-color: #eee;
+    color: #fff;
+    outline: 2px solid #eee;
+    outline-offset: 3px;
+}
+
 /*
 * {
     outline: 1px solid red;
 }
 */
-

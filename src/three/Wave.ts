@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { noise } from '../Perlin';
 import { clamp, getRandomBetween } from '../Utils';
+import type { SunDistortion } from './Sun';
 
 export type WaveOptions = {
     start: THREE.Vector2;
@@ -16,6 +17,7 @@ export type WaveOptions = {
     color: THREE.ColorRepresentation;
     opacity: number;
     z?: number;
+    sunDistortion?: SunDistortion;
 };
 
 export class Wave {
@@ -34,6 +36,8 @@ export class Wave {
     private readonly maxYMagnitude: number;
     private readonly xJitter: number;
     private readonly yJitter: number;
+    private readonly baseSunDistortion?: SunDistortion;
+    private sunDistortion?: SunDistortion;
 
     private readonly anchorXs: Float32Array;
     private readonly baseAnchorXs: Float32Array;
@@ -58,6 +62,16 @@ export class Wave {
         this.baseYMagnitude = this.yMagnitude;
         this.xJitter = opts.xJitter;
         this.yJitter = opts.yJitter;
+        this.baseSunDistortion = opts.sunDistortion && {
+            origin: opts.sunDistortion.origin.clone(),
+            radius: opts.sunDistortion.radius,
+            strength: opts.sunDistortion.strength,
+        };
+        this.sunDistortion = this.baseSunDistortion && {
+            origin: this.baseSunDistortion.origin.clone(),
+            radius: this.baseSunDistortion.radius,
+            strength: this.baseSunDistortion.strength,
+        };
 
         this.xlinspace = (this.end.x - this.start.x) / ((this.numPoints - 1) || 1);
         this.ylinspace = (this.end.y - this.start.y) / ((this.numPoints - 1) || 1);
@@ -112,11 +126,29 @@ export class Wave {
                 + yPerlin
                 + Math.sin(tAnchor * 3 * Math.PI + this.ySin) * this.yMagnitude
                 + getRandomBetween(-this.yJitter, this.yJitter);
-            const posX = this.anchorXs[i] + xPerlin;
+            let posX = this.anchorXs[i] + xPerlin;
+            let distortedPosY = posY;
+
+            if (this.sunDistortion) {
+                const offsetX = posX - this.sunDistortion.origin.x;
+                const offsetY = distortedPosY - this.sunDistortion.origin.y;
+                const distance = Math.hypot(offsetX, offsetY);
+                const influence = Math.max(0, 1 - distance / this.sunDistortion.radius);
+
+                if (influence > 0 && distance > 0) {
+                    const displacement =
+                        this.sunDistortion.radius
+                        * this.sunDistortion.strength
+                        * influence
+                        * influence;
+                    posX += (offsetX / distance) * displacement;
+                    distortedPosY += (offsetY / distance) * displacement;
+                }
+            }
 
             const idx = i * 3;
             this.positions[idx] = posX;
-            this.positions[idx + 1] = posY;
+            this.positions[idx + 1] = distortedPosY;
             this.positions[idx + 2] = 0;
 
             x += this.xlinspace;
@@ -136,6 +168,13 @@ export class Wave {
             this.anchorXs[i] = this.baseAnchorXs[i] * scale.x;
         }
         this.yMagnitude = clamp(this.baseYMagnitude * scale.x, this.minYMagnitude, this.maxYMagnitude);
+        if (this.baseSunDistortion) {
+            this.sunDistortion = {
+                origin: this.baseSunDistortion.origin.clone().multiply(scale),
+                radius: this.baseSunDistortion.radius * scale.x,
+                strength: this.baseSunDistortion.strength,
+            };
+        }
     }
 
     dispose = (): void => {

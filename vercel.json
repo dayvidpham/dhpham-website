@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "corepack pnpm@10.33.4 install --frozen-lockfile",
-  "buildCommand": "corepack pnpm@10.33.4 build",
+  "buildCommand": "corepack pnpm@10.33.4 run build",
   "outputDirectory": "dist"
 }
