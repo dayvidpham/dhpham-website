@@ -2,11 +2,12 @@
 **/node_modules/
 /package-lock.json
 
-# TypeScript
-**/*.d.ts
-**/*.d.ts.map
-**/*.js
-**/*.js.map
+# Generated JavaScript and declarations at the repository root.
+# Do not widen these patterns: vendored Quartz includes tracked .js and .d.ts files.
+/*.d.ts
+/*.d.ts.map
+/*.js
+/*.js.map
 **/tsconfig.tsbuildinfo
 
 # Build artifacts
@@ -14,6 +15,8 @@ dist/
 out/
 playwright-report/
 test-results/
+.test-artifacts/
+/worktree/
 # nix build
 result
 
