@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { clamp } from '../Utils';
 
-export type SunOptions = {
+export type PlanetOptions = {
     origin: THREE.Vector2;
     radius: number;
     minRadius: number;
@@ -11,42 +11,33 @@ export type SunOptions = {
     z?: number;
 };
 
-/**
- * The typed input that lets waves bend around a Sun without depending on a
- * particular Sun instance at runtime.
- */
-export type SunDistortion = Readonly<{
-    origin: THREE.Vector2;
-    radius: number;
-    strength: number;
-}>;
-
-export class Sun {
+/** A foreground planet whose layout is always derived from the initial viewport. */
+export class Planet {
     readonly mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
 
-    private radius: number;
+    private readonly baseOrigin: THREE.Vector2;
+    private readonly baseRadius: number;
     private readonly minRadius: number;
     private readonly maxRadius: number;
-    private readonly baseRadius: number;
-    private readonly baseOrigin: THREE.Vector2;
     private readonly z: number;
+    private radius: number;
     private disposed = false;
 
-    constructor(opts: SunOptions) {
+    constructor(opts: PlanetOptions) {
+        this.baseOrigin = opts.origin.clone();
         this.minRadius = opts.minRadius;
         this.maxRadius = opts.maxRadius;
         this.radius = clamp(opts.radius, this.minRadius, this.maxRadius);
         this.baseRadius = this.radius;
-        this.baseOrigin = opts.origin.clone();
-        this.z = opts.z ?? 0;
+        this.z = opts.z ?? 1;
 
-        const geometry = new THREE.CircleGeometry(this.baseRadius, opts.segments ?? 96);
-        const material = new THREE.MeshBasicMaterial({
-            color: opts.color,
-            side: THREE.DoubleSide,
-        });
-
-        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh = new THREE.Mesh(
+            new THREE.CircleGeometry(this.baseRadius, opts.segments ?? 96),
+            new THREE.MeshBasicMaterial({
+                color: opts.color,
+                side: THREE.DoubleSide,
+            }),
+        );
         this.mesh.position.set(opts.origin.x, opts.origin.y, this.z);
     }
 
@@ -54,11 +45,9 @@ export class Sun {
         return this.radius;
     }
 
-    toDistortion = (strength: number): SunDistortion => ({
-        origin: new THREE.Vector2(this.mesh.position.x, this.mesh.position.y),
-        radius: this.radius,
-        strength,
-    });
+    get worldPosition(): THREE.Vector2 {
+        return new THREE.Vector2(this.mesh.position.x, this.mesh.position.y);
+    }
 
     resize = (scale: THREE.Vector2): void => {
         this.mesh.position.set(
