@@ -70,4 +70,89 @@
       }
     }
   }
+
+  & > .graph-route-link {
+    display: inline-flex;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.published-graph {
+  & > #published-graph-description {
+    margin-top: 0;
+  }
+
+  & > .published-graph-container {
+    border: 1px solid var(--lightgray);
+    border-radius: 5px;
+    box-sizing: border-box;
+    height: min(62vh, 42rem);
+    min-height: 20rem;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+  }
+
+  & > nav {
+    margin-top: 2rem;
+  }
+
+  .published-graph-nodes {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    list-style: none;
+    padding: 0;
+  }
+
+  .published-graph-node {
+    border: 1px solid var(--lightgray);
+    border-radius: 5px;
+    min-width: 0;
+    padding: 1rem;
+
+    & > h3 {
+      margin: 0;
+    }
+  }
+
+  .published-graph-tags {
+    color: var(--darkgray);
+    font-size: 0.9rem;
+    margin: 0.35rem 0 0;
+  }
+
+  .published-graph-relationships {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 0.75rem;
+
+    h4 {
+      font-size: 0.9rem;
+      margin: 0 0 0.25rem;
+    }
+
+    ul {
+      margin: 0;
+      overflow-wrap: anywhere;
+      padding-left: 1.2rem;
+    }
+  }
+
+  .published-graph-empty {
+    color: var(--darkgray);
+  }
+
+  @media all and ($mobile) {
+    & > .published-graph-container {
+      height: 24rem;
+      min-height: 16rem;
+    }
+
+    .published-graph-relationships {
+      grid-template-columns: 1fr;
+    }
+  }
 }

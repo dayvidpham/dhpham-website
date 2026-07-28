@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
+
+import { PRIVATE_FIXTURE_SENTINELS } from './private-fixture-sentinels.mjs';
 
 const mode = process.argv[2];
 const workspaceRoot = process.cwd();
@@ -51,20 +53,84 @@ const readGraphConfig = (document, id, documentPath) => {
     }
 };
 
-const collectFiles = async (directory) => {
+const collectFiles = async (directory, files = []) => {
     const entries = await readdir(directory, { withFileTypes: true });
-    const files = [];
 
     for (const entry of entries) {
         const path = join(directory, entry.name);
         if (entry.isDirectory()) {
-            files.push(...await collectFiles(path));
+            await collectFiles(path, files);
         } else if (entry.isFile()) {
             files.push(path);
         }
+        requireCondition(files.length <= 8192, 'generated file inventory exceeds the 8192-file verification bound.');
     }
 
     return files;
+};
+
+const assertValidationTopology = async () => {
+    const outputDirectory = join(workspaceRoot, '.test-artifacts', 'quartz-validation');
+    const contentIndex = await readContentIndex(outputDirectory);
+    const expectedLinks = {
+        index: [],
+        active: ['direct'],
+        backlink: ['active'],
+        direct: ['distance-two'],
+        'distance-two': ['distance-three'],
+        'distance-three': [],
+    };
+    assert.deepEqual(Object.keys(contentIndex).sort(), Object.keys(expectedLinks).sort());
+    for (const [slug, links] of Object.entries(expectedLinks)) {
+        assert.deepEqual(contentIndex[slug].links, links, `Validation fixture ${slug} links must stay deterministic.`);
+    }
+
+    const graphPath = join(outputDirectory, 'graph', 'index.html');
+    const graphDocument = await readGeneratedFile(graphPath);
+    requireCondition(
+        graphDocument.includes('aria-label="Graph relationships"'),
+        `${relative(workspaceRoot, graphPath)} does not contain the complete textual graph alternative.`,
+    );
+};
+
+const assertManifest = async () => {
+    const manifestPath = join(workspaceRoot, '.test-artifacts', 'artifact-manifest.json');
+    const serialized = await readGeneratedFile(manifestPath);
+    let manifest;
+    try {
+        manifest = JSON.parse(serialized);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        fail(`could not parse ${relative(workspaceRoot, manifestPath)} as JSON (${message}).`);
+    }
+    const expectedKinds = [
+        'metadata-fixture',
+        'reading-rail-fixture',
+        'graph-fixture',
+        'existing-topology-fixture',
+        'validation-fixture',
+        'production',
+    ];
+    requireCondition(manifest.schemaVersion === 1, 'artifact manifest schemaVersion is not 1.');
+    requireCondition(/^[0-9a-f]{40}$/.test(manifest.sourceRevision), 'artifact manifest sourceRevision is not a full commit.');
+    assert.deepEqual(manifest.artifacts.map((artifact) => artifact.kind), expectedKinds);
+    requireCondition(
+        manifest.artifacts.every((artifact) => artifact.status === 'passed'
+            && artifact.files.length > 0
+            && artifact.routes.length > 0
+            && artifact.files.every((file) => /^[0-9a-f]{64}$/.test(file.sha256))),
+        'artifact manifest contains a non-passing, empty, or unhashed local artifact record.',
+    );
+    requireCondition(
+        ['passed', 'failed', 'skipped-missing-credentials', 'skipped-no-public-post'].includes(manifest.vercel.status),
+        'artifact manifest converts the separate Vercel result into an unknown or invented status.',
+    );
+    requireCondition(manifest.vercel.knownPriorPreview === 'failed', 'artifact manifest dropped the known prior failed Vercel evidence.');
+    requireCondition(((await stat(manifestPath)).mode & 0o777) === 0o600, 'artifact manifest permissions are not mode 0600.');
+
+    await assertFixtureTopology();
+    await assertValidationTopology();
+    await assertProductionOutput();
 };
 
 const assertFixtureTopology = async () => {
@@ -108,20 +174,11 @@ const assertProductionOutput = async () => {
     requireCondition(sitemap.includes('https://dhpham.com/blog/'), 'dist/blog/sitemap.xml does not emit the configured Quartz base URL.');
     requireCondition(feed.includes('https://dhpham.com/blog/'), 'dist/blog/index.xml does not emit the configured Quartz base URL.');
 
-    const fixtureSentinels = [
-        'Fixture active',
-        'Fixture direct',
-        'Fixture distance two',
-        'Fixture distance three',
-        'Fixture backlink',
-        'Private fixture topology',
-        'tests/fixtures/quartz-content',
-    ];
     const outputFiles = await collectFiles(join(workspaceRoot, 'dist'));
 
     for (const outputPath of outputFiles) {
         const outputRelativePath = relative(workspaceRoot, outputPath);
-        for (const sentinel of fixtureSentinels) {
+        for (const sentinel of PRIVATE_FIXTURE_SENTINELS) {
             requireCondition(
                 !outputRelativePath.includes(sentinel),
                 `${outputRelativePath} exposes private fixture sentinel ${JSON.stringify(sentinel)} in its path.`,
@@ -129,7 +186,7 @@ const assertProductionOutput = async () => {
         }
 
         const contents = await readGeneratedFile(outputPath);
-        for (const sentinel of fixtureSentinels) {
+        for (const sentinel of PRIVATE_FIXTURE_SENTINELS) {
             requireCondition(
                 !contents.includes(sentinel),
                 `${outputRelativePath} exposes private fixture sentinel ${JSON.stringify(sentinel)} in its contents.`,
@@ -142,6 +199,8 @@ if (mode === 'fixture') {
     await assertFixtureTopology();
 } else if (mode === 'production') {
     await assertProductionOutput();
+} else if (mode === 'manifest') {
+    await assertManifest();
 } else {
-    fail('expected exactly one mode argument: fixture or production.');
+    fail('expected exactly one statically wired mode argument: fixture, production, or manifest.');
 }
