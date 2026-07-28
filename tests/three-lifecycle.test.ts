@@ -136,8 +136,10 @@ describe('Three.js scene object lifecycles', () => {
         rings.resize(new THREE.Vector2(2, 0.5));
 
         expect(scene.children.filter((child) => child instanceof THREE.Points)).toHaveLength(2);
-        expect(rings.back.geometry.getAttribute('position').count).toBe(8);
-        expect(rings.front.geometry.getAttribute('position').count).toBe(8);
+        expect(rings.back.geometry.getAttribute('position').count).toBe(16);
+        expect(rings.front.geometry.getAttribute('position').count).toBe(16);
+        expect(rings.back.geometry.drawRange.count).toBe(8);
+        expect(rings.front.geometry.drawRange.count).toBe(8);
         expect(initialBackPositions).toEqual(
             Array.from(duplicate.back.geometry.getAttribute('position').array),
         );
@@ -156,5 +158,64 @@ describe('Three.js scene object lifecycles', () => {
         expect(frontGeometryDispose).toHaveBeenCalledOnce();
         expect(backMaterialDispose).toHaveBeenCalledOnce();
         expect(frontMaterialDispose).toHaveBeenCalledOnce();
+    });
+
+    it('repartitions the seeded particles between fixed occlusion clouds as they cross the ring halves', () => {
+        const radiusX = 140;
+        const radiusY = 42;
+        const particlesPerHalf = 12;
+        const rings = new RingSystem({
+            center: new THREE.Vector2(300, 220),
+            radiusX,
+            radiusY,
+            z: 1,
+            color: '#d1d1ee',
+            particlesPerHalf,
+            seed: 73,
+            orbitRadiansPerMillisecond: Math.PI / 100,
+        });
+        const back = rings.back;
+        const front = rings.front;
+        const backPosition = back.geometry.getAttribute('position');
+        const frontPosition = front.geometry.getAttribute('position');
+
+        const isFrontHalf = (x: number, y: number): boolean => {
+            const angle = Math.atan2(y / radiusY, x / radiusX);
+            return angle >= 0 && angle < Math.PI;
+        };
+        const expectCloudToMatchHalf = (
+            points: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>,
+            expectedFrontHalf: boolean,
+        ): void => {
+            const positions = points.geometry.getAttribute('position');
+            const drawnCount = points.geometry.drawRange.count;
+            expect(drawnCount).toBeGreaterThan(0);
+            for (let index = 0; index < drawnCount; index += 1) {
+                const positionIndex = index * positions.itemSize;
+                expect(
+                    isFrontHalf(positions.array[positionIndex], positions.array[positionIndex + 1]),
+                ).toBe(expectedFrontHalf);
+            }
+        };
+        const expectCurrentPartition = (): void => {
+            expect(back.geometry.drawRange.count + front.geometry.drawRange.count).toBe(
+                particlesPerHalf * 2,
+            );
+            expectCloudToMatchHalf(back, false);
+            expectCloudToMatchHalf(front, true);
+        };
+
+        expectCurrentPartition();
+        rings.update(100);
+        expectCurrentPartition();
+        rings.update(100);
+        expectCurrentPartition();
+
+        expect(rings.back).toBe(back);
+        expect(rings.front).toBe(front);
+        expect(back.geometry.getAttribute('position')).toBe(backPosition);
+        expect(front.geometry.getAttribute('position')).toBe(frontPosition);
+
+        rings.dispose();
     });
 });
