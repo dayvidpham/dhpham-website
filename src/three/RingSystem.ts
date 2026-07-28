@@ -12,12 +12,13 @@ export type RingSystemOptions = {
     orbitRadiansPerMillisecond?: number;
 };
 
-type ParticleHalf = {
+type SeededParticles = {
     readonly angles: Float32Array;
     readonly radialOffsets: Float32Array;
     readonly speeds: Float32Array;
-    readonly position: THREE.BufferAttribute;
 };
+
+const FULL_ORBIT = Math.PI * 2;
 
 const seededRandom = (seed: number): (() => number) => {
     let state = seed >>> 0;
@@ -38,8 +39,9 @@ export class RingSystem {
     readonly navigationPosition = new THREE.Vector2();
     readonly navigationHitSize = new THREE.Vector2();
 
-    private readonly backHalf: ParticleHalf;
-    private readonly frontHalf: ParticleHalf;
+    private readonly particles: SeededParticles;
+    private readonly backPosition: THREE.BufferAttribute;
+    private readonly frontPosition: THREE.BufferAttribute;
     private readonly baseCenter: THREE.Vector2;
     private readonly baseRadiusX: number;
     private readonly baseRadiusY: number;
@@ -67,10 +69,12 @@ export class RingSystem {
         this.orbitRadiansPerMillisecond = opts.orbitRadiansPerMillisecond ?? 0.00018;
 
         const random = seededRandom(opts.seed ?? 0x81_5e_1c);
-        this.backHalf = this.createHalf(particlesPerHalf, Math.PI, random);
-        this.frontHalf = this.createHalf(particlesPerHalf, 0, random);
-        this.back = this.createPoints(this.backHalf.position, opts, this.z - 0.5);
-        this.front = this.createPoints(this.frontHalf.position, opts, this.z + 0.5);
+        this.particles = this.createParticles(particlesPerHalf, random);
+        const particleCapacity = particlesPerHalf * 2;
+        this.backPosition = this.createPositionBuffer(particleCapacity);
+        this.frontPosition = this.createPositionBuffer(particleCapacity);
+        this.back = this.createPoints(this.backPosition, opts, this.z - 0.5);
+        this.front = this.createPoints(this.frontPosition, opts, this.z + 0.5);
         this.updateGeometry();
     }
 
@@ -97,17 +101,17 @@ export class RingSystem {
         this.front.material.dispose();
     }
 
-    private createHalf = (
-        particleCount: number,
-        startAngle: number,
+    private createParticles = (
+        particlesPerHalf: number,
         random: () => number,
-    ): ParticleHalf => {
+    ): SeededParticles => {
+        const particleCount = particlesPerHalf * 2;
         const angles = new Float32Array(particleCount);
         const radialOffsets = new Float32Array(particleCount);
         const speeds = new Float32Array(particleCount);
-        const positions = new Float32Array(particleCount * 3);
 
         for (let index = 0; index < particleCount; index += 1) {
+            const startAngle = index < particlesPerHalf ? Math.PI : 0;
             angles[index] = startAngle + random() * Math.PI;
             radialOffsets[index] = 0.9 + random() * 0.2;
             speeds[index] = 0.8 + random() * 0.4;
@@ -117,9 +121,13 @@ export class RingSystem {
             angles,
             radialOffsets,
             speeds,
-            position: new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage),
         };
     }
+
+    private createPositionBuffer = (particleCapacity: number): THREE.BufferAttribute => (
+        new THREE.BufferAttribute(new Float32Array(particleCapacity * 3), 3)
+            .setUsage(THREE.DynamicDrawUsage)
+    );
 
     private createPoints = (
         position: THREE.BufferAttribute,
@@ -145,8 +153,7 @@ export class RingSystem {
     private updateGeometry = (): void => {
         this.back.position.set(this.center.x, this.center.y, this.z - 0.5);
         this.front.position.set(this.center.x, this.center.y, this.z + 0.5);
-        this.updateHalf(this.backHalf);
-        this.updateHalf(this.frontHalf);
+        this.repartitionParticles();
 
         this.navigationPosition.set(
             this.center.x + Math.cos(this.phase) * this.radiusX,
@@ -158,16 +165,31 @@ export class RingSystem {
         );
     }
 
-    private updateHalf = (half: ParticleHalf): void => {
-        const positions = half.position.array as Float32Array;
-        for (let index = 0; index < half.angles.length; index += 1) {
-            const angle = half.angles[index] + this.phase * half.speeds[index];
-            const radialOffset = half.radialOffsets[index];
-            const positionIndex = index * 3;
+    private repartitionParticles = (): void => {
+        const backPositions = this.backPosition.array as Float32Array;
+        const frontPositions = this.frontPosition.array as Float32Array;
+        let backCount = 0;
+        let frontCount = 0;
+
+        for (let index = 0; index < this.particles.angles.length; index += 1) {
+            const angle = this.particles.angles[index] + this.phase * this.particles.speeds[index];
+            const radialOffset = this.particles.radialOffsets[index];
+            const frontHalf = this.isFrontHalf(angle);
+            const positions = frontHalf ? frontPositions : backPositions;
+            const positionIndex = (frontHalf ? frontCount++ : backCount++) * 3;
             positions[positionIndex] = Math.cos(angle) * this.radiusX * radialOffset;
             positions[positionIndex + 1] = Math.sin(angle) * this.radiusY * radialOffset;
             positions[positionIndex + 2] = 0;
         }
-        half.position.needsUpdate = true;
+
+        this.back.geometry.setDrawRange(0, backCount);
+        this.front.geometry.setDrawRange(0, frontCount);
+        this.backPosition.needsUpdate = true;
+        this.frontPosition.needsUpdate = true;
+    }
+
+    private isFrontHalf = (angle: number): boolean => {
+        const normalizedAngle = ((angle % FULL_ORBIT) + FULL_ORBIT) % FULL_ORBIT;
+        return normalizedAngle < Math.PI;
     }
 }
