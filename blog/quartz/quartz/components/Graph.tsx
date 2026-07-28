@@ -4,6 +4,9 @@ import script from "./scripts/graph.inline"
 import style from "./styles/graph.scss"
 import { i18n } from "../i18n"
 import { classNames } from "../util/lang"
+import type { FullSlug } from "../util/path"
+import { resolveRelative } from "../util/path"
+import { GRAPH_ROUTE_SLUG } from "../custom/graph/types"
 
 export interface D3Config {
   drag: boolean
@@ -57,9 +60,12 @@ const defaultOptions: GraphOptions = {
 }
 
 export default ((opts?: GraphOptions) => {
-  const Graph: QuartzComponent = ({ displayClass, cfg }: QuartzComponentProps) => {
+  const Graph: QuartzComponent = ({ displayClass, cfg, fileData }: QuartzComponentProps) => {
+    if (fileData.slug === GRAPH_ROUTE_SLUG) return null
+
     const localGraph = { ...defaultOptions.localGraph, ...opts?.localGraph }
     const globalGraph = { ...defaultOptions.globalGraph, ...opts?.globalGraph }
+    const graphRouteHref = resolveRelative(fileData.slug!, GRAPH_ROUTE_SLUG as FullSlug)
     return (
       <div class={classNames(displayClass, "graph")}>
         <h3>{i18n(cfg.locale).components.graph.title}</h3>
@@ -92,6 +98,9 @@ export default ((opts?: GraphOptions) => {
             </svg>
           </button>
         </div>
+        <a class="graph-route-link internal" href={graphRouteHref}>
+          Explore the full graph
+        </a>
         <div id="global-graph-outer">
           <div id="global-graph-container" data-cfg={JSON.stringify(globalGraph)}></div>
         </div>

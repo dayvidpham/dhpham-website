@@ -1,13 +1,13 @@
 import { Root } from "hast"
 import { GlobalConfiguration } from "../../cfg"
-import { getDate } from "../../components/Date"
 import { escapeHTML } from "../../util/escape"
-import { FilePath, FullSlug, SimpleSlug, joinSegments, simplifySlug } from "../../util/path"
+import { FilePath, FullSlug, SimpleSlug, joinSegments } from "../../util/path"
 import { QuartzEmitterPlugin } from "../types"
 import { toHtml } from "hast-util-to-html"
 import { write } from "./helpers"
 import { i18n } from "../../i18n"
 import DepGraph from "../../depgraph"
+import { HttpsUrl } from "../../custom/metadata/types"
 
 export type ContentIndex = Map<FullSlug, ContentDetails>
 export type ContentDetails = {
@@ -16,9 +16,15 @@ export type ContentDetails = {
   tags: string[]
   content: string
   richContent?: string
-  date?: Date
+}
+
+type EmitterContentDetails = ContentDetails & {
+  canonical: HttpsUrl
+  published?: Date
+  modified?: Date
   description?: string
 }
+type EmitterContentIndex = Map<FullSlug, EmitterContentDetails>
 
 interface Options {
   enableSiteMap: boolean
@@ -36,42 +42,45 @@ const defaultOptions: Options = {
   includeEmptyFiles: true,
 }
 
-function generateSiteMap(cfg: GlobalConfiguration, idx: ContentIndex): string {
-  const base = cfg.baseUrl ?? ""
-  const createURLEntry = (slug: SimpleSlug, content: ContentDetails): string => `<url>
-    <loc>https://${joinSegments(base, encodeURI(slug))}</loc>
-    ${content.date && `<lastmod>${content.date.toISOString()}</lastmod>`}
+function generateSiteMap(idx: EmitterContentIndex): string {
+  const createURLEntry = (content: EmitterContentDetails): string => `<url>
+    <loc>${escapeHTML(content.canonical)}</loc>
+    ${content.modified ? `<lastmod>${content.modified.toISOString()}</lastmod>` : ""}
   </url>`
   const urls = Array.from(idx)
-    .map(([slug, content]) => createURLEntry(simplifySlug(slug), content))
+    .map(([, content]) => createURLEntry(content))
     .join("")
   return `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${urls}</urlset>`
 }
 
-function generateRSSFeed(cfg: GlobalConfiguration, idx: ContentIndex, limit?: number): string {
+function generateRSSFeed(
+  cfg: GlobalConfiguration,
+  idx: EmitterContentIndex,
+  limit?: number,
+): string {
   const base = cfg.baseUrl ?? ""
 
-  const createURLEntry = (slug: SimpleSlug, content: ContentDetails): string => `<item>
+  const createURLEntry = (content: EmitterContentDetails): string => `<item>
     <title>${escapeHTML(content.title)}</title>
-    <link>https://${joinSegments(base, encodeURI(slug))}</link>
-    <guid>https://${joinSegments(base, encodeURI(slug))}</guid>
-    <description>${content.richContent ?? content.description}</description>
-    <pubDate>${content.date?.toUTCString()}</pubDate>
+    <link>${escapeHTML(content.canonical)}</link>
+    <guid>${escapeHTML(content.canonical)}</guid>
+    <description>${content.richContent ?? escapeHTML(content.description ?? "")}</description>
+    ${content.published ? `<pubDate>${content.published.toUTCString()}</pubDate>` : ""}
   </item>`
 
   const items = Array.from(idx)
     .sort(([_, f1], [__, f2]) => {
-      if (f1.date && f2.date) {
-        return f2.date.getTime() - f1.date.getTime()
-      } else if (f1.date && !f2.date) {
+      if (f1.published && f2.published) {
+        return f2.published.getTime() - f1.published.getTime()
+      } else if (f1.published && !f2.published) {
         return -1
-      } else if (!f1.date && f2.date) {
+      } else if (!f1.published && f2.published) {
         return 1
       }
 
       return f1.title.localeCompare(f2.title)
     })
-    .map(([slug, content]) => createURLEntry(simplifySlug(slug), content))
+    .map(([, content]) => createURLEntry(content))
     .slice(0, limit ?? idx.size)
     .join("")
 
@@ -116,21 +125,47 @@ export const ContentIndex: QuartzEmitterPlugin<Partial<Options>> = (opts) => {
     async emit(ctx, content, _resources) {
       const cfg = ctx.cfg.configuration
       const emitted: FilePath[] = []
-      const linkIndex: ContentIndex = new Map()
+      const linkIndex: EmitterContentIndex = new Map()
       for (const [tree, file] of content) {
-        const slug = file.data.slug!
-        const date = getDate(ctx.cfg.configuration, file.data) ?? new Date()
+        const slug = file.data.slug
+        if (slug === undefined) {
+          const sourcePath = file.data.relativePath ?? file.data.filePath ?? "unknown source"
+          throw new Error(
+            `Content index metadata failed. Operation: emit ContentIndex. File: ${JSON.stringify(sourcePath)}. ` +
+              'Field: "slug". Problem: the normalized Quartz slug is absent. ' +
+              "Impact: sitemap, feed, and browser index entries cannot identify this page. " +
+              "Fix: emit ContentIndex only after Quartz assigns the source slug.",
+          )
+        }
+        const metadata = file.data.derivedPageMetadata
+        if (metadata === undefined) {
+          const sourcePath = file.data.relativePath ?? file.data.filePath ?? slug
+          throw new Error(
+            `Content index metadata failed. Operation: emit ContentIndex. File: ${JSON.stringify(sourcePath)}. ` +
+              'Field: "derivedPageMetadata". Problem: the authoritative metadata record is absent. ' +
+              "Impact: sitemap and feed output cannot report truthful canonical URLs or dates. " +
+              "Fix: run the registered FrontMatter metadata derivation before ContentIndex.",
+          )
+        }
         if (opts?.includeEmptyFiles || (file.data.text && file.data.text !== "")) {
           linkIndex.set(slug, {
-            title: file.data.frontmatter?.title!,
+            title: metadata.editorial.title,
             links: file.data.links ?? [],
-            tags: file.data.frontmatter?.tags ?? [],
+            tags: [...metadata.editorial.tags],
             content: file.data.text ?? "",
             richContent: opts?.rssFullHtml
               ? escapeHTML(toHtml(tree as Root, { allowDangerousHtml: true }))
               : undefined,
-            date: date,
-            description: file.data.description ?? "",
+            canonical: metadata.canonical,
+            published:
+              metadata.editorial.published === undefined
+                ? undefined
+                : new Date(metadata.editorial.published),
+            modified:
+              metadata.editorial.modified === undefined
+                ? undefined
+                : new Date(metadata.editorial.modified),
+            description: metadata.editorial.description,
           })
         }
       }
@@ -139,7 +174,7 @@ export const ContentIndex: QuartzEmitterPlugin<Partial<Options>> = (opts) => {
         emitted.push(
           await write({
             ctx,
-            content: generateSiteMap(cfg, linkIndex),
+            content: generateSiteMap(linkIndex),
             slug: "sitemap" as FullSlug,
             ext: ".xml",
           }),
@@ -160,12 +195,14 @@ export const ContentIndex: QuartzEmitterPlugin<Partial<Options>> = (opts) => {
       const fp = joinSegments("static", "contentIndex") as FullSlug
       const simplifiedIndex = Object.fromEntries(
         Array.from(linkIndex).map(([slug, content]) => {
-          // remove description and from content index as nothing downstream
-          // actually uses it. we only keep it in the index as we need it
-          // for the RSS feed
-          delete content.description
-          delete content.date
-          return [slug, content]
+          const contentIndexEntry = {
+            title: content.title,
+            links: content.links,
+            tags: content.tags,
+            content: content.content,
+            ...(content.richContent === undefined ? {} : { richContent: content.richContent }),
+          } satisfies ContentDetails
+          return [slug, contentIndexEntry]
         }),
       )
 

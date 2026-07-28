@@ -1,6 +1,18 @@
 .content-meta {
   margin-top: 0;
   color: var(--gray);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0;
+  overflow-wrap: anywhere;
+
+  > span {
+    display: inline;
+
+    code {
+      font-size: 0.85em;
+    }
+  }
 
   &[show-comma="true"] {
     > span:not(:last-child) {

@@ -15,6 +15,10 @@ import { Content } from "../../components"
 import chalk from "chalk"
 import { write } from "./helpers"
 import DepGraph from "../../depgraph"
+import GraphRoute from "../../custom/graph/GraphRoute"
+import { emitGraphRoute } from "../../custom/graph/emitGraphRoute"
+import { assertGraphRouteOwnership } from "../../custom/graph/model"
+import { GRAPH_ROUTE_DEPENDENCY, GRAPH_ROUTE_SLUG } from "../../custom/graph/types"
 
 // get all the dependencies for the markdown file
 // eg. images, scripts, stylesheets, transclusions
@@ -62,6 +66,7 @@ export const ContentPage: QuartzEmitterPlugin<Partial<FullPageLayout>> = (userOp
   const { head: Head, header, beforeBody, pageBody, afterBody, left, right, footer: Footer } = opts
   const Header = HeaderConstructor()
   const Body = BodyConstructor()
+  const GraphRoutePage = GraphRoute()
 
   return {
     name: "ContentPage",
@@ -77,15 +82,21 @@ export const ContentPage: QuartzEmitterPlugin<Partial<FullPageLayout>> = (userOp
         ...left,
         ...right,
         Footer,
+        GraphRoutePage,
       ]
     },
     async getDependencyGraph(ctx, content, _resources) {
+      const allFiles = content.map(([, file]) => file.data)
+      assertGraphRouteOwnership(ctx, allFiles)
       const graph = new DepGraph<FilePath>()
+      const graphRoutePath = joinSegments(ctx.argv.output, GRAPH_ROUTE_SLUG + ".html") as FilePath
+      graph.addEdge(GRAPH_ROUTE_DEPENDENCY, graphRoutePath)
 
       for (const [tree, file] of content) {
         const sourcePath = file.data.filePath!
         const slug = file.data.slug!
         graph.addEdge(sourcePath, joinSegments(ctx.argv.output, slug + ".html") as FilePath)
+        graph.addEdge(sourcePath, graphRoutePath)
 
         parseDependencies(ctx.argv, tree as Root, file).forEach((dep) => {
           graph.addEdge(dep as FilePath, sourcePath)
@@ -98,6 +109,7 @@ export const ContentPage: QuartzEmitterPlugin<Partial<FullPageLayout>> = (userOp
       const cfg = ctx.cfg.configuration
       const fps: FilePath[] = []
       const allFiles = content.map((c) => c[1].data)
+      assertGraphRouteOwnership(ctx, allFiles)
 
       let containsIndex = false
       for (const [tree, file] of content) {
@@ -127,6 +139,8 @@ export const ContentPage: QuartzEmitterPlugin<Partial<FullPageLayout>> = (userOp
 
         fps.push(fp)
       }
+
+      fps.push(await emitGraphRoute(ctx, content, resources))
 
       if (!containsIndex && !ctx.argv.fastRebuild) {
         console.log(
