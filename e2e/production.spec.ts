@@ -73,9 +73,11 @@ test('generated desktop home uses native keyboard Blog navigation', async ({ pag
     await expect(page.getByRole('heading', { name: 'Coming soon', exact: true })).toBeVisible();
 });
 
-test('generated mobile home keeps the scene and complete Blog pointer target on-screen', async ({ browser }) => {
+test('generated mobile home uses native touch Blog navigation', async ({ browser }) => {
     const context = await browser.newContext({
         deviceScaleFactor: 3,
+        hasTouch: true,
+        isMobile: true,
         viewport: { width: 390, height: 844 },
     });
     try {
@@ -84,8 +86,14 @@ test('generated mobile home keeps the scene and complete Blog pointer target on-
         await waitForSceneStartup(page);
 
         await expect(page.locator('#main-canvas')).toBeVisible();
-        await expect(page.locator('a#blog-navigation')).toBeVisible();
+        const blogNavigation = page.locator('a#blog-navigation');
+        await expect(blogNavigation).toBeVisible();
         await expectNavigationHitAreaWithinViewport(page);
+        await Promise.all([
+            page.waitForURL('**/blog/'),
+            blogNavigation.tap({ force: true }),
+        ]);
+        await expect(page.getByRole('heading', { name: 'Coming soon', exact: true })).toBeVisible();
     } finally {
         await context.close();
     }

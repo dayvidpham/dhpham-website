@@ -14,8 +14,8 @@
     "verify:production": "node tests/verify-generated-output.mjs production",
     "build": "rm -rf dist && pnpm run build:home && pnpm run build:blog",
     "build:home": "tsc && vite build",
-    "build:blog": "QUARTZ_BUILD_MODE=production corepack pnpm --dir blog/quartz quartz build --directory content --output ../../dist/blog",
-    "build:fixture": "rm -rf .test-artifacts/quartz-fixture && QUARTZ_BUILD_MODE=fixture corepack pnpm --dir blog/quartz quartz build --directory ../../tests/fixtures/quartz-content --output ../../.test-artifacts/quartz-fixture",
+    "build:blog": "corepack pnpm --dir blog/quartz quartz build --directory content --output ../../dist/blog",
+    "build:fixture": "rm -rf .test-artifacts/quartz-fixture && corepack pnpm --dir blog/quartz quartz build --directory ../../tests/fixtures/quartz-content --output ../../.test-artifacts/quartz-fixture",
     "preview": "vite preview",
     "start": "tsc --watch& vite"
   },
