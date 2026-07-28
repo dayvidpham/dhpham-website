@@ -98,7 +98,13 @@ describe('SceneController', () => {
         expect(controller.rings.back.position.z).toBeLessThan(controller.planet.mesh.position.z);
         expect(controller.rings.front.position.z).toBeGreaterThan(controller.planet.mesh.position.z);
         expect(controller.navigationAnchor.worldPosition).not.toEqual(initialTarget);
-        expect(navigationElement.style.left).toBe(`${controller.navigationAnchor.worldPosition.x}px`);
+        expect(navigationElement.style.left).toBe(`${controller.navigationAnchor.screenPosition.x}px`);
+        expect(controller.navigationAnchor.screenPosition.x).toBeGreaterThanOrEqual(
+            controller.navigationAnchor.screenHitSize.x / 2,
+        );
+        expect(controller.navigationAnchor.screenPosition.x).toBeLessThanOrEqual(
+            800 - controller.navigationAnchor.screenHitSize.x / 2,
+        );
         expect(renderer.render).toHaveBeenCalledTimes(3);
 
         controller.stop();

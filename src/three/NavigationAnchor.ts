@@ -10,7 +10,13 @@ export type NavigationAnchorOptions = {
     label: string;
     worldPosition: THREE.Vector2;
     hitSize: THREE.Vector2;
+    viewport: NavigationViewport;
 };
+
+export type NavigationViewport = Readonly<{
+    width: number;
+    height: number;
+}>;
 
 /**
  * The native link is the sole owner of navigation. Three.js supplies only the
@@ -22,6 +28,8 @@ export class NavigationAnchor {
     readonly label: string;
     readonly worldPosition = new THREE.Vector2();
     readonly hitSize = new THREE.Vector2();
+    readonly screenPosition = new THREE.Vector2();
+    readonly screenHitSize = new THREE.Vector2();
 
     constructor(opts: NavigationAnchorOptions) {
         this.element = opts.element;
@@ -29,15 +37,32 @@ export class NavigationAnchor {
         this.label = opts.label;
         this.element.setAttribute('href', this.route);
         this.element.textContent = this.label;
-        this.sync(opts.worldPosition, opts.hitSize);
+        this.sync(opts.worldPosition, opts.hitSize, opts.viewport);
     }
 
-    sync = (worldPosition: THREE.Vector2, hitSize: THREE.Vector2): void => {
+    sync = (
+        worldPosition: THREE.Vector2,
+        hitSize: THREE.Vector2,
+        viewport: NavigationViewport,
+    ): void => {
         this.worldPosition.copy(worldPosition);
         this.hitSize.copy(hitSize);
-        this.element.style.left = `${this.worldPosition.x}px`;
-        this.element.style.top = `${this.worldPosition.y}px`;
-        this.element.style.width = `${this.hitSize.x}px`;
-        this.element.style.height = `${this.hitSize.y}px`;
+        this.screenHitSize.set(
+            Math.min(this.hitSize.x, viewport.width),
+            Math.min(this.hitSize.y, viewport.height),
+        );
+        this.screenPosition.set(
+            this.clampToViewport(this.worldPosition.x, this.screenHitSize.x, viewport.width),
+            this.clampToViewport(this.worldPosition.y, this.screenHitSize.y, viewport.height),
+        );
+        this.element.style.left = `${this.screenPosition.x}px`;
+        this.element.style.top = `${this.screenPosition.y}px`;
+        this.element.style.width = `${this.screenHitSize.x}px`;
+        this.element.style.height = `${this.screenHitSize.y}px`;
+    }
+
+    private clampToViewport = (position: number, size: number, limit: number): number => {
+        const halfSize = size / 2;
+        return Math.min(Math.max(position, halfSize), limit - halfSize);
     }
 }

@@ -12,6 +12,12 @@
         pnpmPkg = pkgs.pnpm_10.overrideAttrs {
           nodejs = nodePkg;
         };
+        corepackShim = pkgs.writeShellScriptBin "corepack" ''
+          if [ "$1" = "pnpm" ]; then
+            shift
+          fi
+          exec ${pnpmPkg}/bin/pnpm "$@"
+        '';
 
         buildInputs = [
           nodePkg
@@ -38,7 +44,7 @@
               inherit (finalAttrs) pname version src;
               pnpm = pnpmPkg;
               fetcherVersion = 3;
-              hash = "sha256-YXW30Z67mI7XUJ+ZfeRoChPwWgv0NbDYX62xUbTdG2I=";
+              hash = "sha256-1qT6zILnestvDlz6UGaXSBxWzTmWR5g38IHDUj/xO8s=";
             };
 
             nativeBuildInputs = [
@@ -49,7 +55,8 @@
 
             buildPhase = ''
               runHook preBuild
-              pnpm build
+              patchShebangs blog/quartz/quartz/bootstrap-cli.mjs
+              PATH="${corepackShim}/bin:$PATH" pnpm run build
               runHook postBuild
             '';
 

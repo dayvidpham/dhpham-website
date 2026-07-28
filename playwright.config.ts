@@ -22,7 +22,7 @@ export default defineConfig({
         toHaveScreenshot: { maxDiffPixelRatio: 0.001 },
     },
     webServer: {
-        command: `exec ./node_modules/.bin/vite --host 127.0.0.1 --port ${serverPort} --strictPort`,
+        command: `exec ./node_modules/.bin/vite preview --host 127.0.0.1 --port ${serverPort} --strictPort`,
         url: serverUrl,
         reuseExistingServer: false,
     },
