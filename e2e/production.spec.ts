@@ -59,6 +59,22 @@ test('generated desktop home uses native pointer Blog navigation', async ({ page
     await expect(page.getByRole('heading', { name: 'Coming soon', exact: true })).toBeVisible();
 });
 
+test('generated home links to the served CV and resume PDFs', async ({ page }) => {
+    await page.goto('/');
+
+    for (const { label, href } of [
+        { label: 'cv', href: '/cv' },
+        { label: 'resume', href: '/resume' },
+    ]) {
+        await expect(page.getByRole('link', { name: label, exact: true })).toHaveAttribute('href', href);
+
+        const response = await page.request.get(href);
+        expect(response.status()).toBe(200);
+        expect(response.headers()['content-type']).toContain('application/pdf');
+        expect((await response.body()).subarray(0, 5).toString('ascii')).toBe('%PDF-');
+    }
+});
+
 test('generated desktop home uses native keyboard Blog navigation', async ({ page }) => {
     await page.goto('/');
     await waitForSceneStartup(page);

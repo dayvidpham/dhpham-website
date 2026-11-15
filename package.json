@@ -17,6 +17,7 @@
     "test:vercel-preview": "tsx tests/vercel-preview.ts",
     "verify:fixture": "node tests/verify-generated-output.mjs fixture",
     "verify:production": "node tests/verify-generated-output.mjs production",
+    "documents:publish": "node scripts/publish-documents.mjs",
     "build": "rm -rf dist && pnpm run build:home && pnpm run build:blog",
     "build:home": "tsc && vite build",
     "build:blog": "corepack pnpm --dir blog/quartz quartz build --directory content --output ../../dist/blog",

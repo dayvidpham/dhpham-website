@@ -165,6 +165,18 @@ const assertProductionOutput = async () => {
     const sitemap = await readGeneratedFile(join(outputDirectory, 'sitemap.xml'));
     const feed = await readGeneratedFile(join(outputDirectory, 'index.xml'));
 
+    for (const document of ['cv.pdf', 'resume.pdf']) {
+        const documentPath = join(workspaceRoot, 'dist', document);
+        const bytes = await readFile(documentPath).catch((error) => {
+            const message = error instanceof Error ? error.message : String(error);
+            fail(`could not read the published ${document} (${message}).`);
+        });
+        requireCondition(
+            bytes.subarray(0, 5).toString('ascii') === '%PDF-',
+            `dist/${document} is missing or is not a PDF, so the home-page document link would break.`,
+        );
+    }
+
     assert.deepEqual(Object.keys(contentIndex), ['index'], 'Production content index must expose only the Blog landing node.');
     assert.equal(contentIndex.index.title, 'Blog', 'Production content index must retain the Blog landing title.');
     requireCondition(/<h1(?:\s[^>]*)?>Coming soon/.test(indexDocument), 'dist/blog/index.html does not contain the coming-soon landing.');

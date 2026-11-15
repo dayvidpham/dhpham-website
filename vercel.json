@@ -3,5 +3,35 @@
   "installCommand": "corepack pnpm@10.33.4 install --frozen-lockfile",
   "buildCommand": "corepack pnpm@10.33.4 run build",
   "outputDirectory": "dist",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/cv",
+      "destination": "/cv.pdf"
+    },
+    {
+      "source": "/resume",
+      "destination": "/resume.pdf"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/cv",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/pdf"
+        }
+      ]
+    },
+    {
+      "source": "/resume",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/pdf"
+        }
+      ]
+    }
+  ]
 }
