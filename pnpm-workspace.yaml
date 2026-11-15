@@ -2,4 +2,9 @@ packages:
   - "blog/quartz"
 
 allowBuilds:
+  '@parcel/watcher': true
   esbuild: true
+
+permissions:
+  pixi.js:
+    skills: false
