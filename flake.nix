@@ -8,14 +8,14 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        nodePkg = pkgs.nodejs_24;
-        pnpmPkg = pkgs.pnpm_10.overrideAttrs {
+        nodePkg = pkgs.nodejs_26;
+        pnpmPkg = pkgs.pnpm_12.overrideAttrs {
           nodejs = nodePkg;
         };
         corepackShim = pkgs.writeShellScriptBin "corepack" ''
-          if [ "$1" = "pnpm" ]; then
-            shift
-          fi
+          case "$1" in
+            pnpm|pnpm@*) shift ;;
+          esac
           exec ${pnpmPkg}/bin/pnpm "$@"
         '';
 
@@ -43,8 +43,8 @@
             pnpmDeps = pkgs.fetchPnpmDeps {
               inherit (finalAttrs) pname version src;
               pnpm = pnpmPkg;
-              fetcherVersion = 3;
-              hash = "sha256-hqpD7uJ9Hd2lKz4+9leWAGPXbw0IF7QaCGufg3fl5bQ=";
+              fetcherVersion = 5;
+              hash = "sha256-jLEvzY20yvXFTXqa4RgMeMc2SzNWqlj/WF+WliKnFGM=";
             };
 
             nativeBuildInputs = [

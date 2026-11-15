@@ -1,15 +1,15 @@
 {
   "name": "dhpham-website",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.33.4",
+  "packageManager": "pnpm@12.21.0",
   "description": "",
   "scripts": {
     "test": "vitest run --exclude tests/static-server/server.test.ts --exclude tests/artifacts/orchestrate.test.ts",
     "test:all": "pnpm test && pnpm run test:quartz:check && pnpm run test:quartz && pnpm run test:validation:core && pnpm run test:artifacts && pnpm run test:e2e && pnpm run test:e2e:validation",
     "test:e2e": "pnpm run build && PLAYWRIGHT_PORT=${PLAYWRIGHT_PORT:-$((30000 + $$ % 10000))} playwright test e2e/production.spec.ts e2e/scene.spec.ts",
     "test:e2e:validation": "PLAYWRIGHT_PORT=${PLAYWRIGHT_PORT:-$((40000 + $$ % 10000))} playwright test --config playwright.validation.config.ts",
-    "test:quartz": "corepack pnpm@10.33.4 --dir blog/quartz test",
-    "test:quartz:check": "corepack pnpm@10.33.4 --dir blog/quartz check",
+    "test:quartz": "corepack pnpm@12.21.0 --dir blog/quartz test",
+    "test:quartz:check": "corepack pnpm@12.21.0 --dir blog/quartz check",
     "test:static-server": "tsx tests/static-server/server.test.ts",
     "test:orchestrator": "tsx tests/artifacts/orchestrate.test.ts",
     "test:validation:core": "pnpm run test:static-server && pnpm run test:orchestrator",
@@ -18,20 +18,20 @@
     "verify:fixture": "node tests/verify-generated-output.mjs fixture",
     "verify:production": "node tests/verify-generated-output.mjs production",
     "documents:publish": "node scripts/publish-documents.mjs",
-    "build": "rm -rf dist && corepack pnpm@10.33.4 run build:home && corepack pnpm@10.33.4 run build:blog",
+    "build": "rm -rf dist && corepack pnpm@12.21.0 run build:home && corepack pnpm@12.21.0 run build:blog",
     "build:home": "tsc && vite build",
-    "build:blog": "corepack pnpm@10.33.4 --dir blog/quartz quartz build --directory content --output ../../dist/blog",
-    "build:fixture": "rm -rf .test-artifacts/quartz-fixture && corepack pnpm@10.33.4 --dir blog/quartz quartz build --directory ../../tests/fixtures/quartz-content --output ../../.test-artifacts/quartz-fixture",
+    "build:blog": "corepack pnpm@12.21.0 --dir blog/quartz quartz build --directory content --output ../../dist/blog",
+    "build:fixture": "rm -rf .test-artifacts/quartz-fixture && corepack pnpm@12.21.0 --dir blog/quartz quartz build --directory ../../tests/fixtures/quartz-content --output ../../.test-artifacts/quartz-fixture",
     "preview": "vite preview",
     "start": "tsc --watch& vite"
   },
   "engines": {
-    "node": "24.x",
-    "npm": ">=10.x",
-    "pnpm": ">=10.x"
+    "node": "26.x",
+    "npm": ">=11.x",
+    "pnpm": ">=12.x"
   },
   "keywords": [],
-  "author": "dayvidpham@gmail.com",
+  "author": "davidpham.tech@gmail.com",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.62.0",

@@ -75,6 +75,14 @@ test('generated home links to the served CV and resume PDFs', async ({ page }) =
     }
 });
 
+test('generated home exposes the current contact email', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(
+        page.getByRole('link', { name: 'davidpham.tech@gmail.com', exact: true }),
+    ).toHaveAttribute('href', 'mailto:davidpham.tech@gmail.com');
+});
+
 test('generated desktop home uses native keyboard Blog navigation', async ({ page }) => {
     await page.goto('/');
     await waitForSceneStartup(page);
