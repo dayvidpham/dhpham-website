@@ -31,7 +31,7 @@
     "pnpm": ">=12.x"
   },
   "keywords": [],
-  "author": "dayvidpham@gmail.com",
+  "author": "davidpham.tech@gmail.com",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.62.0",
